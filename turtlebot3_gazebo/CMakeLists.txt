@@ -69,13 +69,18 @@ install(TARGETS ${EXEC_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch models rviz urdf worlds
+install(DIRECTORY descriptions launch models rviz urdf worlds
   DESTINATION share/${PROJECT_NAME}/
+)
+
+install(DIRECTORY config/
+DESTINATION share/${PROJECT_NAME}/
 )
 
 install(DIRECTORY include/
   DESTINATION include/
 )
+
 
 ################################################################################
 # Macro for ament package
