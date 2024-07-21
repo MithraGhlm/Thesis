@@ -1,6 +1,3 @@
-# This file configures the controllers for the robot
-# configuration for ros2 control system, using the ros2_control framework
-
 controller_manager:
   ros__parameters:
     update_rate: 50
@@ -9,29 +6,24 @@ controller_manager:
     diff_cont:
       type: diff_drive_controller/DiffDriveController
 
-      # diff_cont is the name assigned to a differential drive controller instance (chosen by us)
-      # diff_drive_controller is the package that contains the controller plugin (handled by ros2_controll)
-      # DiffDriveController is the specific controller class within that package
-
-    joint_broad: # Define a joint state broadcaster named joint_broad
+    joint_broad:
       type: joint_state_broadcaster/JointStateBroadcaster
 
 diff_cont:
   ros__parameters:
 
     publish_rate: 50.0
-    update_rate: 50
 
     base_frame_id: base_link
 
     left_wheel_names: ['left_wheel_joint']
     right_wheel_names: ['right_wheel_joint']
     wheel_separation: 0.606
-    wheel_radius: 0.15
+    wheel_radius: 0.075
 
     use_stamped_vel: false
 
-    open_loop: false    
+    # open_loop: false    
 
     # wheels_per_side: x
     # wheel_separation_multiplier: x
@@ -72,10 +64,5 @@ diff_cont:
 
 
 
-joint_broad:
-  ros__parameters:
-    update_rate: 50
-    publish_rate: 50.0
-    use_sim_time: true
-
-    
+# joint_broad:
+#   ros__parameters:

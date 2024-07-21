@@ -28,9 +28,7 @@
     <!-- gazebo_ros2_control is a Gazebo pluging that integrats ros2_control with Gazebo,
     (tells Gazebo to use ros2_control)-->
     <gazebo>
-        <plugin name="libgazebo_ros2_control" filename="libgazebo_ros2_control.so">
-            <!-- Bcs the plugin file has the controller manager inside it, it still needs a YAML
-            parameters file to know which controllers to load -->
+        <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
             <parameters>$(find turtlebot3_gazebo)/config/my_controllers.yaml</parameters>
         </plugin>
     </gazebo>
