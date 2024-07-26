@@ -2,9 +2,8 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
     <gazebo>
-        <plugin name="gazebo_ros2_diff_drive" filename="libgazebo_ros_diff_drive.so">
-            <namespace>/</namespace>
-            <remapping>cmd_vel:=/cmd_vel</remapping>
+        <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+
 
             <!-- Wheel -->
             <left_joint>left_wheel_joint</left_joint>
