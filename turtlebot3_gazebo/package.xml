@@ -3,9 +3,7 @@
 <package format="3">
   <name>turtlebot3_gazebo</name>
   <version>2.2.6</version>
-  <description>
-    Gazebo simulation package for the TurtleBot3
-  </description>
+  <description> Gazebo simulation package for the TurtleBot3 </description>
   <maintainer email="willson@robotis.com">Will Son</maintainer>
   <license>Apache 2.0</license>
   <url type="website">http://turtlebot3.robotis.com</url>
@@ -21,8 +19,12 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2</depend>
+  <depend>canopen</depend>
+  <depend>std_srvs</depend>
+  <depend>canopen_interfaces</depend>
+  <depend>lely_core_libraries</depend>
   <export>
     <build_type>ament_cmake</build_type>
-    <gazebo_ros gazebo_model_path="${prefix}/models"/>
+    <gazebo_ros gazebo_model_path="${prefix}/models" />
   </export>
 </package>
