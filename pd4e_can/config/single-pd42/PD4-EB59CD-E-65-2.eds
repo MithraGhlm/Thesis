@@ -16,7 +16,7 @@ VendorName=Nanotec Electronic GmbH & Co. KG
 VendorNumber=0x26C
 ProductName=PD4-EB59CD-E-65-2
 ProductNumber=0x46
-RevisionNumber=0x8A50000
+RevisionNumber=0x06D40000
 OrderCode=na
 BaudRate_10=1
 BaudRate_20=1
@@ -109,7 +109,7 @@ ParameterName=Revision number
 ObjectType=0x7
 DataType=0x0007
 AccessType=ro
-DefaultValue=0x08A50000
+DefaultValue=0x06D40000
 PDOMapping=0
 ObjFlags=1
 
