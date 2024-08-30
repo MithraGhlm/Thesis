@@ -1,0 +1,78 @@
+[0.007s] Invoking command in '/ros2_ws/src/control_ws/build/ros2_control_demo_example_2': CMAKE_PREFIX_PATH=/ros2_ws/src/control_ws/install/ros2_control_demo_description:/ros2_ws/src/control_ws/install/ros2_control_demo_example_2:/ros2_ws/control_ws/install/ros2_control_demo_description:/ros2_ws/control_ws/install/ros2_control_demo_example_2:/ros2_ws/install/turtlebot3_simulations:/ros2_ws/install/turtlebot3_gazebo:/ros2_ws/install/turtlebot3_fake_node:/ros2_ws/install/pd4e_can:/ros2_ws/install/canopen_tests:/ros2_ws/install/canopen_ros2_controllers:/ros2_ws/install/canopen_ros2_control:/ros2_ws/install/canopen:/ros2_ws/install/canopen_402_driver:/ros2_ws/install/canopen_proxy_driver:/ros2_ws/install/canopen_master_driver:/ros2_ws/install/canopen_fake_slaves:/ros2_ws/install/canopen_base_driver:/ros2_ws/install/canopen_core:/ros2_ws/install/lely_core_libraries:/ros2_ws/install/canopen_interfaces:/ros2_ws/install/canopen_utils:/opt/ros/humble /usr/bin/cmake /ros2_ws/src/control_ws/src/example_2 -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/ros2_ws/src/control_ws/install/ros2_control_demo_example_2
+[0.055s] -- The CXX compiler identification is GNU 11.4.0
+[0.060s] -- Detecting CXX compiler ABI info
+[0.114s] -- Detecting CXX compiler ABI info - done
+[0.119s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.119s] -- Detecting CXX compile features
+[0.119s] -- Detecting CXX compile features - done
+[0.122s] -- Found backward_ros: 1.0.2 (/opt/ros/humble/share/backward_ros/cmake)
+[0.216s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.255s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.261s] -- Found libdw: /usr/lib/x86_64-linux-gnu/libdw.so  
+[0.266s] -- Could NOT find libbfd (missing: LIBBFD_LIBRARY LIBBFD_INCLUDE_DIR) 
+[0.266s] -- BACKWARD_HAS_UNWIND=1
+[0.266s] -- BACKWARD_HAS_BACKTRACE=0
+[0.266s] -- BACKWARD_HAS_BACKTRACE_SYMBOL=0
+[0.266s] -- BACKWARD_HAS_DW=1
+[0.266s] -- BACKWARD_HAS_BFD=0
+[0.266s] -- Found Backward: /opt/ros/humble/share/backward_ros/cmake  
+[0.269s] -- Found ament_cmake: 1.3.9 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.307s] -- Found hardware_interface: 2.41.0 (/opt/ros/humble/share/hardware_interface/cmake)
+[0.346s] -- Found rosidl_generator_c: 3.1.5 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.353s] -- Found rosidl_adapter: 3.1.5 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.362s] -- Found rosidl_generator_cpp: 3.1.5 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.375s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.394s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.928s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.932s] -- Found rmw_cyclonedds_cpp: 1.3.4 (/opt/ros/humble/share/rmw_cyclonedds_cpp/cmake)
+[0.963s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[0.974s] -- Looking for C++ include pthread.h
+[1.045s] -- Looking for C++ include pthread.h - found
+[1.045s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.118s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.119s] -- Found Threads: TRUE  
+[1.264s] -- Found ament_cmake_pytest: 1.3.9 (/opt/ros/humble/share/ament_cmake_pytest/cmake)
+[1.851s] -- Configuring done
+[1.865s] -- Generating done
+[1.866s] -- Build files have been written to: /ros2_ws/src/control_ws/build/ros2_control_demo_example_2
+[1.872s] Invoked command in '/ros2_ws/src/control_ws/build/ros2_control_demo_example_2' returned '0': CMAKE_PREFIX_PATH=/ros2_ws/src/control_ws/install/ros2_control_demo_description:/ros2_ws/src/control_ws/install/ros2_control_demo_example_2:/ros2_ws/control_ws/install/ros2_control_demo_description:/ros2_ws/control_ws/install/ros2_control_demo_example_2:/ros2_ws/install/turtlebot3_simulations:/ros2_ws/install/turtlebot3_gazebo:/ros2_ws/install/turtlebot3_fake_node:/ros2_ws/install/pd4e_can:/ros2_ws/install/canopen_tests:/ros2_ws/install/canopen_ros2_controllers:/ros2_ws/install/canopen_ros2_control:/ros2_ws/install/canopen:/ros2_ws/install/canopen_402_driver:/ros2_ws/install/canopen_proxy_driver:/ros2_ws/install/canopen_master_driver:/ros2_ws/install/canopen_fake_slaves:/ros2_ws/install/canopen_base_driver:/ros2_ws/install/canopen_core:/ros2_ws/install/lely_core_libraries:/ros2_ws/install/canopen_interfaces:/ros2_ws/install/canopen_utils:/opt/ros/humble /usr/bin/cmake /ros2_ws/src/control_ws/src/example_2 -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/ros2_ws/src/control_ws/install/ros2_control_demo_example_2
+[1.873s] Invoking command in '/ros2_ws/src/control_ws/build/ros2_control_demo_example_2': CMAKE_PREFIX_PATH=/ros2_ws/src/control_ws/install/ros2_control_demo_description:/ros2_ws/src/control_ws/install/ros2_control_demo_example_2:/ros2_ws/control_ws/install/ros2_control_demo_description:/ros2_ws/control_ws/install/ros2_control_demo_example_2:/ros2_ws/install/turtlebot3_simulations:/ros2_ws/install/turtlebot3_gazebo:/ros2_ws/install/turtlebot3_fake_node:/ros2_ws/install/pd4e_can:/ros2_ws/install/canopen_tests:/ros2_ws/install/canopen_ros2_controllers:/ros2_ws/install/canopen_ros2_control:/ros2_ws/install/canopen:/ros2_ws/install/canopen_402_driver:/ros2_ws/install/canopen_proxy_driver:/ros2_ws/install/canopen_master_driver:/ros2_ws/install/canopen_fake_slaves:/ros2_ws/install/canopen_base_driver:/ros2_ws/install/canopen_core:/ros2_ws/install/lely_core_libraries:/ros2_ws/install/canopen_interfaces:/ros2_ws/install/canopen_utils:/opt/ros/humble /usr/bin/cmake --build /ros2_ws/src/control_ws/build/ros2_control_demo_example_2 -- -j8 -l8
+[1.905s] [ 50%] [32mBuilding CXX object CMakeFiles/ros2_control_demo_example_2.dir/hardware/diffbot_system.cpp.o[0m
+[4.236s] [100%] [32m[1mLinking CXX shared library libros2_control_demo_example_2.so[0m
+[4.342s] [100%] Built target ros2_control_demo_example_2
+[4.354s] Invoked command in '/ros2_ws/src/control_ws/build/ros2_control_demo_example_2' returned '0': CMAKE_PREFIX_PATH=/ros2_ws/src/control_ws/install/ros2_control_demo_description:/ros2_ws/src/control_ws/install/ros2_control_demo_example_2:/ros2_ws/control_ws/install/ros2_control_demo_description:/ros2_ws/control_ws/install/ros2_control_demo_example_2:/ros2_ws/install/turtlebot3_simulations:/ros2_ws/install/turtlebot3_gazebo:/ros2_ws/install/turtlebot3_fake_node:/ros2_ws/install/pd4e_can:/ros2_ws/install/canopen_tests:/ros2_ws/install/canopen_ros2_controllers:/ros2_ws/install/canopen_ros2_control:/ros2_ws/install/canopen:/ros2_ws/install/canopen_402_driver:/ros2_ws/install/canopen_proxy_driver:/ros2_ws/install/canopen_master_driver:/ros2_ws/install/canopen_fake_slaves:/ros2_ws/install/canopen_base_driver:/ros2_ws/install/canopen_core:/ros2_ws/install/lely_core_libraries:/ros2_ws/install/canopen_interfaces:/ros2_ws/install/canopen_utils:/opt/ros/humble /usr/bin/cmake --build /ros2_ws/src/control_ws/build/ros2_control_demo_example_2 -- -j8 -l8
+[4.374s] Invoking command in '/ros2_ws/src/control_ws/build/ros2_control_demo_example_2': CMAKE_PREFIX_PATH=/ros2_ws/src/control_ws/install/ros2_control_demo_description:/ros2_ws/src/control_ws/install/ros2_control_demo_example_2:/ros2_ws/control_ws/install/ros2_control_demo_description:/ros2_ws/control_ws/install/ros2_control_demo_example_2:/ros2_ws/install/turtlebot3_simulations:/ros2_ws/install/turtlebot3_gazebo:/ros2_ws/install/turtlebot3_fake_node:/ros2_ws/install/pd4e_can:/ros2_ws/install/canopen_tests:/ros2_ws/install/canopen_ros2_controllers:/ros2_ws/install/canopen_ros2_control:/ros2_ws/install/canopen:/ros2_ws/install/canopen_402_driver:/ros2_ws/install/canopen_proxy_driver:/ros2_ws/install/canopen_master_driver:/ros2_ws/install/canopen_fake_slaves:/ros2_ws/install/canopen_base_driver:/ros2_ws/install/canopen_core:/ros2_ws/install/lely_core_libraries:/ros2_ws/install/canopen_interfaces:/ros2_ws/install/canopen_utils:/opt/ros/humble /usr/bin/cmake --install /ros2_ws/src/control_ws/build/ros2_control_demo_example_2
+[4.380s] -- Install configuration: ""
+[4.380s] -- Execute custom install script
+[4.380s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2//ros2_control_demo_example_2.xml
+[4.386s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/include/ros2_control_demo_example_2/ros2_control_demo_example_2/diffbot_system.hpp
+[4.392s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/launch/view_robot.launch.py
+[4.398s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/ros2_control/diffbot.ros2_control.xacro
+[4.405s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/urdf/diffbot.urdf.xacro
+[4.410s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/launch/diffbot.launch.py
+[4.416s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/config/diffbot_controllers.yaml
+[4.421s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/environment/library_path.sh
+[4.426s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/environment/library_path.dsv
+[4.431s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ament_index/resource_index/package_run_dependencies/ros2_control_demo_example_2
+[4.436s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ament_index/resource_index/parent_prefix_path/ros2_control_demo_example_2
+[4.440s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/environment/ament_prefix_path.sh
+[4.445s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/environment/ament_prefix_path.dsv
+[4.450s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/environment/path.sh
+[4.455s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/environment/path.dsv
+[4.460s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/local_setup.bash
+[4.465s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/local_setup.sh
+[4.470s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/local_setup.zsh
+[4.475s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/local_setup.dsv
+[4.480s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/package.dsv
+[4.484s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ament_index/resource_index/packages/ros2_control_demo_example_2
+[4.489s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ament_index/resource_index/hardware_interface__pluginlib__plugin/ros2_control_demo_example_2
+[4.494s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/cmake/ament_cmake_export_targets-extras.cmake
+[4.499s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/cmake/ament_cmake_export_dependencies-extras.cmake
+[4.504s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/cmake/ros2_control_demo_example_2Config.cmake
+[4.510s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/cmake/ros2_control_demo_example_2Config-version.cmake
+[4.516s] -- Symlinking: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/package.xml
+[4.522s] -- Installing: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/lib/libros2_control_demo_example_2.so
+[4.522s] -- Set runtime path of "/ros2_ws/src/control_ws/install/ros2_control_demo_example_2/lib/libros2_control_demo_example_2.so" to ""
+[4.522s] -- Installing: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/cmake/export_ros2_control_demo_example_2Export.cmake
+[4.522s] -- Installing: /ros2_ws/src/control_ws/install/ros2_control_demo_example_2/share/ros2_control_demo_example_2/cmake/export_ros2_control_demo_example_2Export-noconfig.cmake
+[4.524s] Invoked command in '/ros2_ws/src/control_ws/build/ros2_control_demo_example_2' returned '0': CMAKE_PREFIX_PATH=/ros2_ws/src/control_ws/install/ros2_control_demo_description:/ros2_ws/src/control_ws/install/ros2_control_demo_example_2:/ros2_ws/control_ws/install/ros2_control_demo_description:/ros2_ws/control_ws/install/ros2_control_demo_example_2:/ros2_ws/install/turtlebot3_simulations:/ros2_ws/install/turtlebot3_gazebo:/ros2_ws/install/turtlebot3_fake_node:/ros2_ws/install/pd4e_can:/ros2_ws/install/canopen_tests:/ros2_ws/install/canopen_ros2_controllers:/ros2_ws/install/canopen_ros2_control:/ros2_ws/install/canopen:/ros2_ws/install/canopen_402_driver:/ros2_ws/install/canopen_proxy_driver:/ros2_ws/install/canopen_master_driver:/ros2_ws/install/canopen_fake_slaves:/ros2_ws/install/canopen_base_driver:/ros2_ws/install/canopen_core:/ros2_ws/install/lely_core_libraries:/ros2_ws/install/canopen_interfaces:/ros2_ws/install/canopen_utils:/opt/ros/humble /usr/bin/cmake --install /ros2_ws/src/control_ws/build/ros2_control_demo_example_2
