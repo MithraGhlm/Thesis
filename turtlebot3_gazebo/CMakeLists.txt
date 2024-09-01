@@ -27,13 +27,13 @@ find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)
-find_package(canopen REQUIRED)
-find_package(lely_core_libraries REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(canopen_interfaces REQUIRED)
-find_package(canopen_core REQUIRED)
-find_package(canopen_base_driver)
-find_package(canopen_proxy_driver)
+# find_package(canopen REQUIRED)
+# find_package(lely_core_libraries REQUIRED)
+# find_package(std_srvs REQUIRED)
+# find_package(canopen_interfaces REQUIRED)
+# find_package(canopen_core REQUIRED)
+# find_package(canopen_base_driver)
+# find_package(canopen_proxy_driver)
 
 # generate_dcf(pd4e)
 # cogen_dcf(pd4e)
@@ -55,8 +55,8 @@ set(dependencies
   "rclcpp"
   "sensor_msgs"
   "tf2"
-  "canopen"
-  "lely_core_libraries"
+  # "canopen"
+  # "lely_core_libraries"
 )
 
 set(EXEC_NAME "turtlebot3_drive")

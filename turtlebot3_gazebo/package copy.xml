@@ -19,6 +19,10 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2</depend>
+  <depend>canopen</depend>
+  <depend>std_srvs</depend>
+  <depend>canopen_interfaces</depend>
+  <depend>lely_core_libraries</depend>
   <export>
     <build_type>ament_cmake</build_type>
     <gazebo_ros gazebo_model_path="${prefix}/models" />
