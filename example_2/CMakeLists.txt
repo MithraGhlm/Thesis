@@ -11,10 +11,12 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   pluginlib
   rclcpp
   rclcpp_lifecycle
+  lely_core_libraries
 )
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(lely_core_libraries REQUIRED)
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()

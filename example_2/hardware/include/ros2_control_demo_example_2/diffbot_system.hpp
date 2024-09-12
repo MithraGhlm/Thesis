@@ -31,11 +31,32 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "ros2_control_demo_example_2/visibility_control.h"
 
+// TODO: include your basic functionality file here (CANopen_comms.hpp)
+// #include "ros2_control_demo_example_2/canopen_comms.hpp"
+#include "ros2_control_demo_example_2/wheel.hpp"
+
 namespace ros2_control_demo_example_2
 {
 class DiffBotSystemHardware : public hardware_interface::SystemInterface
 {
+
+struct Config
+{
+  std::string left_wheel_name = "";
+  std::string right_wheel_name = "";
+  float loop_rate = 0.0;
+  std::string device = "";
+  int baud_rate = 0;
+  int timeout_ms = 0;
+  int enc_counts_per_rev = 0;
+  int pid_p = 0;
+  int pid_d = 0;
+  int pid_i = 0;
+  int pid_o = 0;
+};
+
 public:
+
   RCLCPP_SHARED_PTR_DEFINITIONS(DiffBotSystemHardware);
 
   ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
@@ -65,19 +86,20 @@ public:
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
-  // Parameters for the DiffBot simulation
-  double hw_start_sec_;
-  double hw_stop_sec_;
 
-  // Store the command for the simulated robot
-  std::vector<double> hw_commands_;
-  std::vector<double> hw_positions_;
-  std::vector<double> hw_velocities_;
+  //TODO
+  // create a new instance of the class from the base functionality class
+  //CanOpenComms motor1_(master,1); // use comms_ functions to override the abouve functions (in diffbot_systems.cpp)
+  //CanOpenComms motor2_(master,2);
 
-  // Store the wheeled robot position
-  double base_x_, base_y_, base_theta_;
+ // make an instance of the created struct
+  Config cfg_;  // populate it with all the params that come from xacro file
+  Wheel wheel_l_;
+  Wheel wheel_r_;
+
 };
 
 }  // namespace ros2_control_demo_example_2
+
 
 #endif  // ROS2_CONTROL_DEMO_EXAMPLE_2__DIFFBOT_SYSTEM_HPP_
