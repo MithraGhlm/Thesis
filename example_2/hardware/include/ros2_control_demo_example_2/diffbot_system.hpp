@@ -31,29 +31,13 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "ros2_control_demo_example_2/visibility_control.h"
 
-// TODO: include your basic functionality file here (CANopen_comms.hpp)
-// #include "ros2_control_demo_example_2/canopen_comms.hpp"
-#include "ros2_control_demo_example_2/wheel.hpp"
+//#include "ros2_control_demo_example_2/wheel.hpp"
+#include "ros2_control_demo_example_2/canopen_comms.hpp"
 
 namespace ros2_control_demo_example_2
 {
 class DiffBotSystemHardware : public hardware_interface::SystemInterface
 {
-
-struct Config
-{
-  std::string left_wheel_name = "";
-  std::string right_wheel_name = "";
-  float loop_rate = 0.0;
-  std::string device = "";
-  int baud_rate = 0;
-  int timeout_ms = 0;
-  int enc_counts_per_rev = 0;
-  int pid_p = 0;
-  int pid_d = 0;
-  int pid_i = 0;
-  int pid_o = 0;
-};
 
 public:
 
@@ -68,6 +52,14 @@ public:
 
   ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
+
+  // ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  // hardware_interface::CallbackReturn on_configure(
+  //   const rclcpp_lifecycle::State & previous_state) override;
+
+  // ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  // hardware_interface::CallbackReturn on_cleanup(
+  //   const rclcpp_lifecycle::State & previous_state) override;
 
   ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
   hardware_interface::CallbackReturn on_activate(
@@ -87,16 +79,8 @@ public:
 
 private:
 
-  //TODO
-  // create a new instance of the class from the base functionality class
-  //CanOpenComms motor1_(master,1); // use comms_ functions to override the abouve functions (in diffbot_systems.cpp)
-  //CanOpenComms motor2_(master,2);
-
- // make an instance of the created struct
-  Config cfg_;  // populate it with all the params that come from xacro file
-  Wheel wheel_l_;
-  Wheel wheel_r_;
-
+  CanOpenComms comms_;
+  
 };
 
 }  // namespace ros2_control_demo_example_2

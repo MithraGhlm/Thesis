@@ -5,6 +5,7 @@
 #include <lely/io2/sys/sigset.hpp>
 #include <lely/io2/sys/timer.hpp>
 #include <lely/coapp/fiber_driver.hpp>
+#include <lely/coapp/loop_driver.hpp>
 #include <lely/coapp/master.hpp>
 #include <iostream>
 #include <cstdlib>
@@ -13,19 +14,27 @@
 #include <atomic>
 #include <sstream>
 #include <time.h>
+#include "rclcpp/rclcpp.hpp"
 
 
 using namespace lely;
 using namespace std::chrono_literals;
 
 
-class PD4Motor : public canopen::FiberDriver
+class PD4Motor : public canopen::LoopDriver
 {
 public:
-    //using FiberDriver::FiberDriver;
-    PD4Motor(canopen::AsyncMaster& master, uint8_t id) :
-        FiberDriver(master, id)
-    {}
+    using LoopDriver::LoopDriver;
+
+    //PD4Motor(std::shared_ptr<ev::Executor> exec, std::shared_ptr<canopen::AsyncMaster> master, uint8_t id) :
+    //    FiberDriver(exec, master, id)
+    //{
+        //set_transition(PD4Motor::TransitionCommand::Shutdown);
+        //set_transition(PD4Motor::TransitionCommand::SwitchOn);
+        //set_mode(PD4Motor::OperatingMode::Velocity);
+    //}
+
+    ~PD4Motor(){}
 
     enum OperatingMode
     {
@@ -52,26 +61,53 @@ public:
         EnableOperation = 0x0F
     };
 
-    ~PD4Motor(){
-        
-    }
+    std::string name = "";
+    double cmd = 0;
+    double pos = 0;
+    double vel = 0;
 
-
-    void set_mode(OperatingMode mode)
+    void set_name(const std::string &wheel_name)
     {
-        Wait(AsyncWrite<int8_t>(0x6060, 0, mode));
+      this->name = wheel_name;
     }
+
+    void wait_(lely::canopen::SdoFuture<void>& fu)
+    {
+        while(!fu.is_ready()){
+            std::this_thread::sleep_for(20ms);
+            puts("not ready");
+        }
+        try{
+            fu.get(); // throw an exception if the operation failed
+            std::cout <<"Write successful" << std::endl;
+        } catch (const canopen::SdoError& e){
+            std::cerr << "Write failed" << e.what() << std::endl;
+        } catch(...){
+            puts("err");
+        }
+    }
+
 
     void set_transition(TransitionCommand cmd)
     {
-        Wait(AsyncWrite<uint16_t>(0x6040, 0, cmd));
+        // Wait(AsyncWrite<uint16_t>(0x6040, 0, cmd));
+        auto fu = AsyncWrite<uint16_t>(0x6040, 0, cmd);
+        //wait_(fu);
     }
+
+    void set_mode(OperatingMode mode)
+    {
+        AsyncWrite<int8_t>(0x6060, 0, mode);
+    }
+
+
 
     void set_TargetVelocity(int16_t value)
     {
         //Wait(AsyncWrite<int16_t>(0x6042, 0, (int16_t)value));
-        AsyncWrite<int16_t>(0x6042, 0, (int16_t)value, 20ms);
-        std::this_thread::sleep_for(500ms);
+        auto fu = AsyncWrite<int16_t>(0x6042, 0, (int16_t)value, 20ms);
+        //wait_(fu);
+        //std::this_thread::sleep_for(100ms);
     }
 
     int16_t get_RPDO_VelocityActualValue()
@@ -79,28 +115,32 @@ public:
         return rpdo_mapped[0x6044][0];
     }
 
-
+    int16_t get_RPDO_PositionActualValue()
+    {
+        return rpdo_mapped[0x6064][0];
+    }
 
 private:
 
     void OnConfig(std::function<void(std::error_code ec)> res) noexcept override
     {
         puts("OnConfig");
-        try
-        {
-            set_mode(PD4Motor::OperatingMode::Velocity);
+        RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "PD4E config!");
+        //try
+        //{
             set_transition(PD4Motor::TransitionCommand::Shutdown);
             set_transition(PD4Motor::TransitionCommand::SwitchOn);
-            set_transition(PD4Motor::TransitionCommand::EnableOperation);
+            //set_mode(PD4Motor::OperatingMode::Velocity);
+            //set_transition(PD4Motor::TransitionCommand::EnableOperation);
             // Report success (empty error code).
-            res({});
-        }
-        catch (canopen::SdoError &e)
-        {
+            //res({});
+        //}
+        //catch (canopen::SdoError &e)
+        //{
             // If one of the SDO requests resulted in an error, abort the
             // configuration and report the error code.
-            res(e.code());
-        }
+        //    res(e.code());
+        //}
     }
 
     void OnDeconfig(::std::function<void(::std::error_code ec)> /*res*/) noexcept override
@@ -114,6 +154,10 @@ private:
         if (idx == 0x6044)
         {
             printf("TPDO VelocityActualValue: %d\n", get_RPDO_VelocityActualValue());
+        } 
+        else if (idx == 0x6044)
+        {
+            printf("TPDO PositionActualValue: %d\n", get_RPDO_PositionActualValue());
         }
     }
 };
@@ -122,52 +166,59 @@ private:
 class CanOpenComms
 {
 public:
-    CanOpenComms()
-        {
-            pass_ = false;
-            start_thread();
-            while(!pass_) {}
-            //std::this_thread::sleep_for(5000ms);
-            //stop_thread();
-        }
+    // CanOpenComms()
+    //     {
+    //         pass_ = false;
+    //         initialize();
+    //         while(!pass_) {}
+    //         //std::this_thread::sleep_for(5000ms);
+    //         //stop_thread();
+    //     }
+
+    CanOpenComms() = default;
 
     ~CanOpenComms(){
         stop_thread();
 
+        delete ctx;
+        delete poll;
+        delete loop;
+        delete timer;
+        delete ctrl;
+        delete chan;
     }
 
-    void start_thread() {
-        //stop_flag = false;
-        spinner = std::thread(&CanOpenComms::init, this);
-    }
+    std::shared_ptr<canopen::AsyncMaster> master_;
+    std::shared_ptr<ev::Executor> exec;
+    std::shared_ptr<PD4Motor> wheel_l_;
+    std::shared_ptr<PD4Motor> wheel_r_;
 
-    void init() {
+    void initialize() {
         ctx = new io::Context();
         poll = new io::Poll(*ctx);
         loop = new ev::Loop(poll->get_poll());
-        exec = new ev::Executor(loop->get_executor());
+        exec = std::make_shared<ev::Executor>(loop->get_executor());
         timer = new io::Timer(*poll, *exec, CLOCK_MONOTONIC);
         ctrl = new io::CanController("can0");
         chan = new io::CanChannel(*poll, *exec);
         chan->open(*ctrl);
-        master_ = new canopen::AsyncMaster(*timer, *chan, "master.dcf", "", 1);
-        
+        master_ = std::make_shared<canopen::AsyncMaster>(*timer, *chan, "/ros2_ws/install/ros2_control_demo_example_2/include/ros2_control_demo_example_2/ros2_control_demo_example_2/master.dcf", "", 1);
         master_->Reset();
-        motor1_ = new PD4Motor(*master_, 2);
-        motor2_ = new PD4Motor(*master_, 3);
-        pass_ = true;
-        puts("Start");
-        loop->run();
-        puts("Stop");
+        wheel_l_ = std::make_shared<PD4Motor>(*master_, 2);
+        wheel_r_ = std::make_shared<PD4Motor>(*master_, 3);
+        //pass_ = true;
+        puts("Starting loop");
+        spinner = std::thread(std::bind(&CanOpenComms::start_thread, this));
+    }
+
+    void start_thread() {
+        this->loop->run();
+        puts("Stopping loop");
     }
 
     void stop_thread() {
         puts("Stop thread");
-        //stop_flag = true;
         puts("Shutting motors down...");
-        motor1_->AsyncWrite<uint16_t>(0x6040, 0, 0x06);
-        motor2_->AsyncWrite<uint16_t>(0x6040, 0, 0x06);
-        std::this_thread::sleep_for(100ms);
         loop->stop();
         if (spinner.joinable()) {
             spinner.join();
@@ -177,8 +228,10 @@ public:
 
     }
 
-    PD4Motor *motor1_;
-    PD4Motor *motor2_;
+    // void set_this_op() {
+    //       //this->motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
+    //       this->master_->AsyncWrite(this->master_->GetExecutor(),2, 0x6042, 0, 300);
+    // }
 
 
 
@@ -186,16 +239,13 @@ private:
     io::Context *ctx;
     io::Poll *poll;
     ev::Loop *loop;
-    ev::Executor *exec;
+    //ev::Executor *exec;
     io::Timer *timer;
     io::CanController *ctrl;
     io::CanChannel *chan;
-    canopen::AsyncMaster *master_;
+    //canopen::AsyncMaster *master_;
     std::thread spinner;
-    //std::atomic<bool> stop_flag;
-    std::atomic<bool> pass_;
     
-    //std::this_thread::sleep_for(std::chrono::seconds(4));
 };
 
 // int main() // .h of diffbot
@@ -214,6 +264,7 @@ private:
 //     comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
 //     puts("sleeping main");
 //     std::this_thread::sleep_for(5000ms);
+//     std::this_thread::sleep_for(std::chrono::seconds(4));
 //     return EXIT_SUCCESS;
 // }
 

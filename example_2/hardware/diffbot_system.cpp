@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+#include "hardware_interface/types/hardware_interface_type_values.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "ros2_control_demo_example_2/diffbot_system.hpp"
-// #include "ros2_control_demo_example_2/canopen_comms.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -21,28 +23,28 @@
 #include <memory>
 #include <vector>
 
-#include "hardware_interface/types/hardware_interface_type_values.hpp"
-#include "rclcpp/rclcpp.hpp"
 
 namespace ros2_control_demo_example_2
 {
 hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
   const hardware_interface::HardwareInfo & info) // HWI gets passed in here & parameters are set
 {
+  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "on_init ...please wait...");
   if (
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
   {
     return hardware_interface::CallbackReturn::ERROR;
   }
+  comms_.initialize();
+  // looking for parameters with these names in the ros2_control.xacro file
+  comms_.wheel_l_->set_name(info_.hardware_parameters["left_wheel_name"]);
+  comms_.wheel_r_->set_name(info_.hardware_parameters["right_wheel_name"]);
+  //timeout_ms = std::stoi(info_.hardware_parameters["timeout_ms"]);
 
-  cfg_.left_wheel_name =  info_.hardware_parameters["left_wheel_name"];
-  cfg_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
-  // ...
-  // ...
+  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "starting thread ...please wait...");
 
-  wheel_l_.setup(cfg_.left_wheel_name, cfg_.enc_counts_per_rev);
-  wheel_r_.setup(cfg_.right_wheel_name, cfg_.enc_counts_per_rev);
+  std::this_thread::sleep_for(500ms);
 
 
 
@@ -99,42 +101,18 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
 }
 
 
-//TODO: modify this function accordingly
-// std::vector<hardware_interface::StateInterface> DiffBotSystemHardware::export_state_interfaces()
-// {
-//   std::vector<hardware_interface::StateInterface> state_interfaces;
-//   for (auto i = 0u; i < info_.joints.size(); i++)
-//   {
-//     state_interfaces.emplace_back(hardware_interface::StateInterface(
-//       info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_positions_[i]));
-//     state_interfaces.emplace_back(hardware_interface::StateInterface(
-//       info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &hw_velocities_[i]));
-//   }
-
-//   return state_interfaces;
-// }
-
-
-//TODO: modify this function accordingly
-// std::vector<hardware_interface::CommandInterface> DiffBotSystemHardware::export_command_interfaces()
-// {
-//   std::vector<hardware_interface::CommandInterface> command_interfaces;
-//   for (auto i = 0u; i < info_.joints.size(); i++)
-//   {
-//     command_interfaces.emplace_back(hardware_interface::CommandInterface(
-//       info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &hw_commands_[i]));
-//   }
-
-//   return command_interfaces;
-// }
-
 hardware_interface::CallbackReturn DiffBotSystemHardware::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
   RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Activating ...please wait...");
   // TODO
-  // comms_.connect();
+ //comms_.set_this_op();
+//  comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
+//  comms_.motor2_->set_transition(PD4Motor::TransitionCommand::Shutdown);
+//  comms_.motor2_->AsyncRead<int16_t>(0x6041, 0);
+  comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
+  comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
+
 
   RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully activated!");
 
@@ -144,11 +122,10 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_activate(
 hardware_interface::CallbackReturn DiffBotSystemHardware::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
   RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Deactivating ...please wait...");
 
   // TODO
-  // comms_.disconnect();
+  comms_.stop_thread();
 
   RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully deactivated!");
 
@@ -156,24 +133,65 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_deactivate(
 }
 
 
-// TODO: use export_state and export_command interfaces in read and write functions
-// hardware_interface::return_type DiffBotSystemHardware::read(
-//   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
-// {
-//   // TODO
-//   // comms_.read_encoder_values();
+// When we update pos & vel values, it tells the rest of the ros2_control systme that those wheels pos & vel has changed.
+// ---> the position and velocity value comming from the wheels (Read)
+std::vector<hardware_interface::StateInterface> DiffBotSystemHardware::export_state_interfaces()
+{
+  std::vector<hardware_interface::StateInterface> state_interfaces;
+  state_interfaces.emplace_back(hardware_interface::StateInterface(
+    comms_.wheel_l_->name, hardware_interface::HW_IF_POSITION, &comms_.wheel_l_->pos));
+  state_interfaces.emplace_back(hardware_interface::StateInterface(
+    comms_.wheel_l_->name, hardware_interface::HW_IF_VELOCITY, &comms_.wheel_l_->vel));
 
-//   return hardware_interface::return_type::OK;
-// }
+  state_interfaces.emplace_back(hardware_interface::StateInterface(
+    comms_.wheel_r_->name, hardware_interface::HW_IF_POSITION, &comms_.wheel_r_->pos));
+  state_interfaces.emplace_back(hardware_interface::StateInterface(
+    comms_.wheel_r_->name, hardware_interface::HW_IF_VELOCITY, &comms_.wheel_r_->vel));
+  return state_interfaces;
+}
 
-// hardware_interface::return_type ros2_control_demo_example_2 ::DiffBotSystemHardware::write(
-//   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
-// {
-//   // TODO
-//   // comms_.set_motor_values();
 
-//   return hardware_interface::return_type::OK;
-// }
+// Anytime the ros2_control sets the velocity of these wheels, it changes the value of cmd
+// ---> the master writing to motors (write)
+std::vector<hardware_interface::CommandInterface> DiffBotSystemHardware::export_command_interfaces()
+{
+  std::vector<hardware_interface::CommandInterface> command_interfaces;
+  command_interfaces.emplace_back(hardware_interface::CommandInterface(
+    comms_.wheel_l_->name, hardware_interface::HW_IF_VELOCITY, &comms_.wheel_l_->cmd));
+
+  command_interfaces.emplace_back(hardware_interface::CommandInterface(
+    comms_.wheel_r_->name, hardware_interface::HW_IF_VELOCITY, &comms_.wheel_r_->cmd));
+  return command_interfaces;
+}
+
+
+// TODO: read from wheels their pos and vel and put in the vector state_interfaces
+hardware_interface::return_type DiffBotSystemHardware::read(
+  const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
+{
+  // comms_.read_encoder_values(); 
+  comms_.wheel_l_->pos = comms_.wheel_l_->get_RPDO_PositionActualValue();
+  comms_.wheel_l_->vel = comms_.wheel_l_->get_RPDO_VelocityActualValue();
+
+  comms_.wheel_r_->pos = comms_.wheel_l_->get_RPDO_PositionActualValue();
+  comms_.wheel_r_->vel = comms_.wheel_r_->get_RPDO_VelocityActualValue();
+
+
+  return hardware_interface::return_type::OK;
+}
+
+// write to wheels the pos and vel by putting in the vector command_interfaces
+hardware_interface::return_type ros2_control_demo_example_2 ::DiffBotSystemHardware::write(
+  const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
+{
+  // comms_.set_motor_values();
+  // comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
+  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "we are in write function");
+  comms_.wheel_l_->set_TargetVelocity(comms_.wheel_l_->cmd);
+  comms_.wheel_r_->set_TargetVelocity(comms_.wheel_r_->cmd);
+
+  return hardware_interface::return_type::OK;
+}
 
 }  // namespace ros2_control_demo_example_2
 
