@@ -36,13 +36,13 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
   {
     return hardware_interface::CallbackReturn::ERROR;
   }
+
+  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "starting thread ...please wait...");
   comms_.initialize();
   // looking for parameters with these names in the ros2_control.xacro file
   comms_.wheel_l_->set_name(info_.hardware_parameters["left_wheel_name"]);
   comms_.wheel_r_->set_name(info_.hardware_parameters["right_wheel_name"]);
   //timeout_ms = std::stoi(info_.hardware_parameters["timeout_ms"]);
-
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "starting thread ...please wait...");
 
   std::this_thread::sleep_for(500ms);
 
@@ -112,6 +112,8 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_activate(
 //  comms_.motor2_->AsyncRead<int16_t>(0x6041, 0);
   comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
   comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
+  comms_.wheel_l_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
+  comms_.wheel_r_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
 
 
   RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully activated!");
@@ -186,9 +188,11 @@ hardware_interface::return_type ros2_control_demo_example_2 ::DiffBotSystemHardw
 {
   // comms_.set_motor_values();
   // comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "we are in write function");
-  comms_.wheel_l_->set_TargetVelocity(comms_.wheel_l_->cmd);
-  comms_.wheel_r_->set_TargetVelocity(comms_.wheel_r_->cmd);
+  //RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "we are in write function");
+  std::cout << "The commanded velocity is: " << comms_.wheel_l_->cmd << std::endl;
+  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd)*10);
+  std::this_thread::sleep_for(20ms);
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd)*10);
 
   return hardware_interface::return_type::OK;
 }

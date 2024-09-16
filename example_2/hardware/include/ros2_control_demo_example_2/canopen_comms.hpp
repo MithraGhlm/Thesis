@@ -107,7 +107,7 @@ public:
         //Wait(AsyncWrite<int16_t>(0x6042, 0, (int16_t)value));
         auto fu = AsyncWrite<int16_t>(0x6042, 0, (int16_t)value, 20ms);
         //wait_(fu);
-        //std::this_thread::sleep_for(100ms);
+        std::this_thread::sleep_for(20ms);
     }
 
     int16_t get_RPDO_VelocityActualValue()
