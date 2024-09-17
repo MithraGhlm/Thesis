@@ -15,7 +15,7 @@
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "ros2_control_demo_example_2/diffbot_system.hpp"
+#include "diffdrive_canopen/diffbot_system.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -24,12 +24,12 @@
 #include <vector>
 
 
-namespace ros2_control_demo_example_2
+namespace diffdrive_canopen
 {
-hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
+hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_init(
   const hardware_interface::HardwareInfo & info) // HWI gets passed in here & parameters are set
 {
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "on_init ...please wait...");
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "on_init ...please wait...");
   if (
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
@@ -37,7 +37,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
     return hardware_interface::CallbackReturn::ERROR;
   }
 
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "starting thread ...please wait...");
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "starting thread ...please wait...");
   comms_.initialize();
   // looking for parameters with these names in the ros2_control.xacro file
   comms_.wheel_l_->set_name(info_.hardware_parameters["left_wheel_name"]);
@@ -54,7 +54,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
     if (joint.command_interfaces.size() != 1)
     {
       RCLCPP_FATAL(
-        rclcpp::get_logger("DiffBotSystemHardware"),
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),
         "Joint '%s' has %zu command interfaces found. 1 expected.", joint.name.c_str(),
         joint.command_interfaces.size());
       return hardware_interface::CallbackReturn::ERROR;
@@ -63,7 +63,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
     if (joint.command_interfaces[0].name != hardware_interface::HW_IF_VELOCITY)
     {
       RCLCPP_FATAL(
-        rclcpp::get_logger("DiffBotSystemHardware"),
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),
         "Joint '%s' have %s command interfaces found. '%s' expected.", joint.name.c_str(),
         joint.command_interfaces[0].name.c_str(), hardware_interface::HW_IF_VELOCITY);
       return hardware_interface::CallbackReturn::ERROR;
@@ -72,7 +72,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
     if (joint.state_interfaces.size() != 2)
     {
       RCLCPP_FATAL(
-        rclcpp::get_logger("DiffBotSystemHardware"),
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),
         "Joint '%s' has %zu state interface. 2 expected.", joint.name.c_str(),
         joint.state_interfaces.size());
       return hardware_interface::CallbackReturn::ERROR;
@@ -81,7 +81,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
     if (joint.state_interfaces[0].name != hardware_interface::HW_IF_POSITION)
     {
       RCLCPP_FATAL(
-        rclcpp::get_logger("DiffBotSystemHardware"),
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),
         "Joint '%s' have '%s' as first state interface. '%s' expected.", joint.name.c_str(),
         joint.state_interfaces[0].name.c_str(), hardware_interface::HW_IF_POSITION);
       return hardware_interface::CallbackReturn::ERROR;
@@ -90,7 +90,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
     if (joint.state_interfaces[1].name != hardware_interface::HW_IF_VELOCITY)
     {
       RCLCPP_FATAL(
-        rclcpp::get_logger("DiffBotSystemHardware"),
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),
         "Joint '%s' have '%s' as second state interface. '%s' expected.", joint.name.c_str(),
         joint.state_interfaces[1].name.c_str(), hardware_interface::HW_IF_VELOCITY);
       return hardware_interface::CallbackReturn::ERROR;
@@ -101,35 +101,32 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_init(
 }
 
 
-hardware_interface::CallbackReturn DiffBotSystemHardware::on_activate(
+hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Activating ...please wait...");
-  // TODO
- //comms_.set_this_op();
-//  comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Activating ...please wait...");
+
 //  comms_.motor2_->set_transition(PD4Motor::TransitionCommand::Shutdown);
-//  comms_.motor2_->AsyncRead<int16_t>(0x6041, 0);
+
   comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
   comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
   comms_.wheel_l_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
   comms_.wheel_r_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
 
 
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully activated!");
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Successfully activated!");
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-hardware_interface::CallbackReturn DiffBotSystemHardware::on_deactivate(
+hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Deactivating ...please wait...");
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Deactivating ...please wait...");
 
-  // TODO
   comms_.stop_thread();
 
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully deactivated!");
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Successfully deactivated!");
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }
@@ -137,7 +134,7 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_deactivate(
 
 // When we update pos & vel values, it tells the rest of the ros2_control systme that those wheels pos & vel has changed.
 // ---> the position and velocity value comming from the wheels (Read)
-std::vector<hardware_interface::StateInterface> DiffBotSystemHardware::export_state_interfaces()
+std::vector<hardware_interface::StateInterface> DiffDriveCanOpenHardware::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
   state_interfaces.emplace_back(hardware_interface::StateInterface(
@@ -155,7 +152,7 @@ std::vector<hardware_interface::StateInterface> DiffBotSystemHardware::export_st
 
 // Anytime the ros2_control sets the velocity of these wheels, it changes the value of cmd
 // ---> the master writing to motors (write)
-std::vector<hardware_interface::CommandInterface> DiffBotSystemHardware::export_command_interfaces()
+std::vector<hardware_interface::CommandInterface> DiffDriveCanOpenHardware::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
   command_interfaces.emplace_back(hardware_interface::CommandInterface(
@@ -168,7 +165,7 @@ std::vector<hardware_interface::CommandInterface> DiffBotSystemHardware::export_
 
 
 // TODO: read from wheels their pos and vel and put in the vector state_interfaces
-hardware_interface::return_type DiffBotSystemHardware::read(
+hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   // comms_.read_encoder_values(); 
@@ -183,22 +180,21 @@ hardware_interface::return_type DiffBotSystemHardware::read(
 }
 
 // write to wheels the pos and vel by putting in the vector command_interfaces
-hardware_interface::return_type ros2_control_demo_example_2 ::DiffBotSystemHardware::write(
+hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   // comms_.set_motor_values();
   // comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
-  //RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "we are in write function");
+  //RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "we are in write function");
   std::cout << "The commanded velocity is: " << comms_.wheel_l_->cmd << std::endl;
   comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd)*10);
-  std::this_thread::sleep_for(20ms);
   comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd)*10);
 
   return hardware_interface::return_type::OK;
 }
 
-}  // namespace ros2_control_demo_example_2
+}  // namespace diffdrive_canopen
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(
-  ros2_control_demo_example_2::DiffBotSystemHardware, hardware_interface::SystemInterface)
+  diffdrive_canopen::DiffDriveCanOpenHardware, hardware_interface::SystemInterface)

@@ -71,6 +71,8 @@ public:
       this->name = wheel_name;
     }
 
+    
+
     void wait_(lely::canopen::SdoFuture<void>& fu)
     {
         while(!fu.is_ready()){
@@ -125,7 +127,7 @@ private:
     void OnConfig(std::function<void(std::error_code ec)> res) noexcept override
     {
         puts("OnConfig");
-        RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "PD4E config!");
+        RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "PD4E config!");
         //try
         //{
             set_transition(PD4Motor::TransitionCommand::Shutdown);
@@ -163,10 +165,10 @@ private:
 };
 
 
-class CanOpenComms
+class CanOpenDriver
 {
 public:
-    // CanOpenComms()
+    // CanOpenDriver()
     //     {
     //         pass_ = false;
     //         initialize();
@@ -175,9 +177,9 @@ public:
     //         //stop_thread();
     //     }
 
-    CanOpenComms() = default;
+    CanOpenDriver() = default;
 
-    ~CanOpenComms(){
+    ~CanOpenDriver(){
         stop_thread();
 
         delete ctx;
@@ -193,6 +195,11 @@ public:
     std::shared_ptr<PD4Motor> wheel_l_;
     std::shared_ptr<PD4Motor> wheel_r_;
 
+    void set_config(const std::string &can_interface_name, const std::string &file_path, const int &motor_1_id, const int &motor_2_id)
+    {
+
+    }
+
     void initialize() {
         ctx = new io::Context();
         poll = new io::Poll(*ctx);
@@ -202,13 +209,13 @@ public:
         ctrl = new io::CanController("can0");
         chan = new io::CanChannel(*poll, *exec);
         chan->open(*ctrl);
-        master_ = std::make_shared<canopen::AsyncMaster>(*timer, *chan, "/ros2_ws/install/ros2_control_demo_example_2/include/ros2_control_demo_example_2/ros2_control_demo_example_2/master.dcf", "", 1);
+        master_ = std::make_shared<canopen::AsyncMaster>(*timer, *chan, "/ros2_ws/install/diffdrive_canopen/include/diffdrive_canopen/diffdrive_canopen/master.dcf", "", 1);
         master_->Reset();
         wheel_l_ = std::make_shared<PD4Motor>(*master_, 2);
         wheel_r_ = std::make_shared<PD4Motor>(*master_, 3);
         //pass_ = true;
         puts("Starting loop");
-        spinner = std::thread(std::bind(&CanOpenComms::start_thread, this));
+        spinner = std::thread(std::bind(&CanOpenDriver::start_thread, this));
     }
 
     void start_thread() {
@@ -245,12 +252,14 @@ private:
     io::CanChannel *chan;
     //canopen::AsyncMaster *master_;
     std::thread spinner;
-    
+    std::string canopen_interface_name = "can0";
+    std::string file_path = "/ros2_ws/install/diffdrive_canopen/include/diffdrive_canopen/diffdrive_canopen/master.dcf";
+    int 
 };
 
 // int main() // .h of diffbot
 // {
-//     CanOpenComms comms_;
+//     CanOpenDriver comms_;
 
 //     // for(int i=0 ; i<400; i++)
 //     // {

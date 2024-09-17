@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROS2_CONTROL_DEMO_EXAMPLE_2__DIFFBOT_SYSTEM_HPP_
-#define ROS2_CONTROL_DEMO_EXAMPLE_2__DIFFBOT_SYSTEM_HPP_
+#ifndef DIFFDRIVE_CANOPEN__DIFFBOT_SYSTEM_HPP_
+#define DIFFDRIVE_CANOPEN__DIFFBOT_SYSTEM_HPP_
 
 #include <memory>
 #include <string>
@@ -29,61 +29,61 @@
 #include "rclcpp/time.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
-#include "ros2_control_demo_example_2/visibility_control.h"
+#include "diffdrive_canopen/visibility_control.h"
 
-//#include "ros2_control_demo_example_2/wheel.hpp"
-#include "ros2_control_demo_example_2/canopen_comms.hpp"
+//#include "diffdrive_canopen/wheel.hpp"
+#include "diffdrive_canopen/canopen_comms.hpp"
 
-namespace ros2_control_demo_example_2
+namespace diffdrive_canopen
 {
-class DiffBotSystemHardware : public hardware_interface::SystemInterface
+class DiffDriveCanOpenHardware : public hardware_interface::SystemInterface
 {
 
 public:
 
-  RCLCPP_SHARED_PTR_DEFINITIONS(DiffBotSystemHardware);
+  RCLCPP_SHARED_PTR_DEFINITIONS(DiffDriveCanOpenHardware);
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   hardware_interface::CallbackReturn on_init(
     const hardware_interface::HardwareInfo & info) override;
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
-  // ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  // DIFFDRIVE_CANOPEN_PUBLIC
   // hardware_interface::CallbackReturn on_configure(
   //   const rclcpp_lifecycle::State & previous_state) override;
 
-  // ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  // DIFFDRIVE_CANOPEN_PUBLIC
   // hardware_interface::CallbackReturn on_cleanup(
   //   const rclcpp_lifecycle::State & previous_state) override;
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   hardware_interface::CallbackReturn on_activate(
     const rclcpp_lifecycle::State & previous_state) override;
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   hardware_interface::CallbackReturn on_deactivate(
     const rclcpp_lifecycle::State & previous_state) override;
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   hardware_interface::return_type read(
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
-  ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
+  DIFFDRIVE_CANOPEN_PUBLIC
   hardware_interface::return_type write(
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
 
-  CanOpenComms comms_;
-  
+  CanOpenDriver comms_;
+
 };
 
-}  // namespace ros2_control_demo_example_2
+}  // namespace diffdrive_canopen
 
 
-#endif  // ROS2_CONTROL_DEMO_EXAMPLE_2__DIFFBOT_SYSTEM_HPP_
+#endif  // DIFFDRIVE_CANOPEN__DIFFBOT_SYSTEM_HPP_

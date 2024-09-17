@@ -19,38 +19,38 @@
  * library cannot have, but the consuming code must have inorder to link.
  */
 
-#ifndef ROS2_CONTROL_DEMO_EXAMPLE_2__VISIBILITY_CONTROL_H_
-#define ROS2_CONTROL_DEMO_EXAMPLE_2__VISIBILITY_CONTROL_H_
+#ifndef DIFFDRIVE_CANOPEN__VISIBILITY_CONTROL_H_
+#define DIFFDRIVE_CANOPEN__VISIBILITY_CONTROL_H_
 
 // This logic was borrowed (then namespaced) from the examples on the gcc wiki:
 //     https://gcc.gnu.org/wiki/Visibility
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_EXPORT __attribute__((dllexport))
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_IMPORT __attribute__((dllimport))
+#define DIFFDRIVE_CANOPEN_EXPORT __attribute__((dllexport))
+#define DIFFDRIVE_CANOPEN_IMPORT __attribute__((dllimport))
 #else
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_EXPORT __declspec(dllexport)
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_IMPORT __declspec(dllimport)
+#define DIFFDRIVE_CANOPEN_EXPORT __declspec(dllexport)
+#define DIFFDRIVE_CANOPEN_IMPORT __declspec(dllimport)
 #endif
-#ifdef ROS2_CONTROL_DEMO_EXAMPLE_2_BUILDING_DLL
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC ROS2_CONTROL_DEMO_EXAMPLE_2_EXPORT
+#ifdef DIFFDRIVE_CANOPEN_BUILDING_DLL
+#define DIFFDRIVE_CANOPEN_PUBLIC DIFFDRIVE_CANOPEN_EXPORT
 #else
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC ROS2_CONTROL_DEMO_EXAMPLE_2_IMPORT
+#define DIFFDRIVE_CANOPEN_PUBLIC DIFFDRIVE_CANOPEN_IMPORT
 #endif
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC_TYPE ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_LOCAL
+#define DIFFDRIVE_CANOPEN_PUBLIC_TYPE DIFFDRIVE_CANOPEN_PUBLIC
+#define DIFFDRIVE_CANOPEN_LOCAL
 #else
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_EXPORT __attribute__((visibility("default")))
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_IMPORT
+#define DIFFDRIVE_CANOPEN_EXPORT __attribute__((visibility("default")))
+#define DIFFDRIVE_CANOPEN_IMPORT
 #if __GNUC__ >= 4
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC __attribute__((visibility("default")))
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_LOCAL __attribute__((visibility("hidden")))
+#define DIFFDRIVE_CANOPEN_PUBLIC __attribute__((visibility("default")))
+#define DIFFDRIVE_CANOPEN_LOCAL __attribute__((visibility("hidden")))
 #else
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_LOCAL
+#define DIFFDRIVE_CANOPEN_PUBLIC
+#define DIFFDRIVE_CANOPEN_LOCAL
 #endif
-#define ROS2_CONTROL_DEMO_EXAMPLE_2_PUBLIC_TYPE
+#define DIFFDRIVE_CANOPEN_PUBLIC_TYPE
 #endif
 
-#endif  // ROS2_CONTROL_DEMO_EXAMPLE_2__VISIBILITY_CONTROL_H_
+#endif  // DIFFDRIVE_CANOPEN__VISIBILITY_CONTROL_H_
