@@ -55,7 +55,7 @@ urg_node:
     ip_port: 10940
     #serial_port: ""
     serial_baud: 115200
-    laser_frame_id: laser
+    laser_frame_id: laser_frame
     angle_max: 3.14
     angle_min: -3.14
     publish_intensity: false

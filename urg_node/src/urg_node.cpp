@@ -70,7 +70,7 @@ UrgNode::UrgNode(const rclcpp::NodeOptions & node_options)
   cluster_(1),
   skip_(0),
   default_user_latency_(0.0),
-  laser_frame_id_("laser"),
+  laser_frame_id_("laser_frame"),
   service_yield_(true)
 {
   (void) synchronize_time_;
