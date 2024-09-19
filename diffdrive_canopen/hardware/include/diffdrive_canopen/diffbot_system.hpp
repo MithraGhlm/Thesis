@@ -32,7 +32,7 @@
 #include "diffdrive_canopen/visibility_control.h"
 
 //#include "diffdrive_canopen/wheel.hpp"
-#include "diffdrive_canopen/canopen_comms.hpp"
+#include "diffdrive_canopen/canopen_driver.hpp"
 
 namespace diffdrive_canopen
 {
