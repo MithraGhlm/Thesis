@@ -13,7 +13,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    use_ros2_control = LaunchConfiguration('use_ros2_control')
+    use_ros2_control = LaunchConfiguration('use_ros2_control', default='true')
 
     # Get the xacro file path
     xacro_file_name = 'robot.urdf.xacro'
@@ -22,7 +22,7 @@ def generate_launch_description():
 
     # Command to process the xacro file and convert it to urdf
     robot_description_config = Command(['xacro ', xacro_file])
-    params = {'robot_description': robot_description_config, 'use_sim_time': use_sim_time}
+    params = {'robot_description': robot_description_config, 'use_sim_time': use_sim_time, 'use_ros2_control': use_ros2_control}
 
 
 
