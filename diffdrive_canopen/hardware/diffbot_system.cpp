@@ -175,6 +175,11 @@ hardware_interface::return_type DiffDriveCanOpenHardware::read(
   comms_.wheel_r_->pos = comms_.wheel_l_->get_RPDO_PositionActualValue();
   comms_.wheel_r_->vel = comms_.wheel_r_->get_RPDO_VelocityActualValue();
 
+RCLCPP_INFO(
+  rclcpp::get_logger("DiffDriveCanOpenHardware"),
+  "pos_l %f, vel_l %f, pos_r %f, vel_r %f", comms_.wheel_l_->pos,  comms_.wheel_l_->vel,
+  comms_.wheel_r_->pos, comms_.wheel_r_->vel);
+
 
   return hardware_interface::return_type::OK;
 }
@@ -183,12 +188,10 @@ hardware_interface::return_type DiffDriveCanOpenHardware::read(
 hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // comms_.set_motor_values();
-  // comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
-  //RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "we are in write function");
-  std::cout << "The commanded velocity is: " << comms_.wheel_l_->cmd << std::endl;
-  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd)*10);
-  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd)*10);
+  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f\n", comms_.wheel_l_->cmd);
+
+  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd));
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd));
 
   return hardware_interface::return_type::OK;
 }
