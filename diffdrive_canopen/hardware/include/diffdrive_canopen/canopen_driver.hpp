@@ -110,10 +110,10 @@ public:
         std::this_thread::sleep_for(20ms);
     }
 
-    int32_t get_VelocityActualValue()
+    int16_t get_VelocityActualValue()
     {
-        lely::canopen::SdoFuture<int32_t> fu = AsyncRead<int32_t>(0x6044, 0, 20ms);
-        int32_t vel_ = wait_<int32_t>(fu, "actual velocity");
+        lely::canopen::SdoFuture<int16_t> fu = AsyncRead<int16_t>(0x6044, 0, 20ms);
+        int16_t vel_ = wait_<int16_t>(fu, "actual velocity");
         
         return vel_;
     }
