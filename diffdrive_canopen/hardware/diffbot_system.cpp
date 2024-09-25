@@ -169,11 +169,11 @@ hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   // comms_.read_encoder_values(); 
-  comms_.wheel_l_->pos = comms_.wheel_l_->get_RPDO_PositionActualValue();
-  comms_.wheel_l_->vel = comms_.wheel_l_->get_RPDO_VelocityActualValue();
+  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue();
+  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue();
 
-  comms_.wheel_r_->pos = comms_.wheel_l_->get_RPDO_PositionActualValue();
-  comms_.wheel_r_->vel = comms_.wheel_r_->get_RPDO_VelocityActualValue();
+  comms_.wheel_r_->pos = comms_.wheel_l_->get_PositionActualValue();
+  comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue();
 
 RCLCPP_INFO(
   rclcpp::get_logger("DiffDriveCanOpenHardware"),

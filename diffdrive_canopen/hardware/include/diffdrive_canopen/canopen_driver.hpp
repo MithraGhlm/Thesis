@@ -68,7 +68,8 @@ public:
 
     
 
-    int16_t wait_(lely::canopen::SdoFuture<int16_t>& fu, const char* type)
+    template <typename T>
+    T wait_(lely::canopen::SdoFuture<T>& fu, const char* type)
     {
         while(!fu.is_ready()){
             std::this_thread::sleep_for(20ms);
@@ -84,7 +85,7 @@ public:
         } catch(...){
             puts("err");
         }
-        return 0;
+        return 1;
     }
 
 
@@ -109,33 +110,20 @@ public:
         std::this_thread::sleep_for(20ms);
     }
 
-    int16_t get_RPDO_VelocityActualValue()
+    int32_t get_VelocityActualValue()
     {
-        // int16_t velocity_value = rpdo_mapped[0x6044][0];
-        // RCLCPP_INFO(
-        // rclcpp::get_logger("DiffDriveCanOpenHardware"),
-        // "VelocityActualValue %d\n", velocity_value);
-
-        // return velocity_value;
-        lely::canopen::SdoFuture<int16_t> fu = AsyncRead<int16_t>(0x6044, 0, 20ms);
-        int16_t vel_ = wait_(fu, "actual vel");
+        lely::canopen::SdoFuture<int32_t> fu = AsyncRead<int32_t>(0x6044, 0, 20ms);
+        int32_t vel_ = wait_<int32_t>(fu, "actual velocity");
         
         return vel_;
     }
 
-    int16_t get_RPDO_PositionActualValue()
+    int32_t get_PositionActualValue()
     {
-        // int16_t position_value = rpdo_mapped[0x6064][0];
-        // //return static_cast<double>(position_value);
-        // RCLCPP_INFO(
-        // rclcpp::get_logger("DiffDriveCanOpenHardware"),
-        // "PositionActualValue %d\n", position_value);
-        // return position_value;
-        lely::canopen::SdoFuture<int16_t> fu = AsyncRead<int16_t>(0x6064, 0, 20ms);
-        int16_t pos_ = wait_(fu, "actual pos");
+        lely::canopen::SdoFuture<int32_t> fu = AsyncRead<int32_t>(0x6064, 0, 20ms);
+        int32_t pos_ = wait_<int32_t>(fu, "actual position");
         
         return pos_;
-
     }
 
 private:
@@ -159,12 +147,12 @@ private:
         if (idx == 0x6044)
         {
         RCLCPP_INFO(
-        rclcpp::get_logger("DiffDriveCanOpenHardware"),"TPDO VelocityActualValue: %d", get_RPDO_VelocityActualValue());
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),"TPDO VelocityActualValue: %d", get_VelocityActualValue());
         } 
         else if (idx == 0x6064)
         {
         RCLCPP_INFO(
-        rclcpp::get_logger("DiffDriveCanOpenHardware"),"TPDO PositionActualValue: %d", get_RPDO_PositionActualValue());
+        rclcpp::get_logger("DiffDriveCanOpenHardware"),"TPDO PositionActualValue: %d", get_PositionActualValue());
         }
     }
 };
@@ -259,23 +247,9 @@ private:
 // {
 //     CanOpenDriver comms_;
 
-//     // for(int i=0 ; i<400; i++)
-//     // {
-//     //     comms_.motor1_->set_TargetVelocity(2*i);
-//     //     if(i%10 == 0){ std::cout << "i is: " << i; };
-
-//     // }
-
-
-   
 //     comms_.motor1_->AsyncWrite<int16_t>(0x6042, 0, 300);
 //     puts("sleeping main");
 //     std::this_thread::sleep_for(5000ms);
 //     std::this_thread::sleep_for(std::chrono::seconds(4));
 //     return EXIT_SUCCESS;
 // }
-
-// on_set velocity
-// 
-//
-//
