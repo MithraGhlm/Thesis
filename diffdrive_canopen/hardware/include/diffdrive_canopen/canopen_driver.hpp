@@ -132,6 +132,9 @@ private:
     {
         RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "PD4E config!");
 
+            set_mode(PD4Motor::OperatingMode::Homing);
+            AsyncWrite<uint16_t>(0x6098, 0, 0x23); // 35 decimal
+
             set_transition(PD4Motor::TransitionCommand::Shutdown);
             set_transition(PD4Motor::TransitionCommand::SwitchOn);
     }
