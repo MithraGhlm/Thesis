@@ -93,12 +93,14 @@ public:
     {
         // Wait(AsyncWrite<uint16_t>(0x6040, 0, cmd));
         auto fu = AsyncWrite<uint16_t>(0x6040, 0, cmd);
+        std::this_thread::sleep_for(20ms);
         //wait_(fu);
     }
 
     void set_mode(OperatingMode mode)
     {
         AsyncWrite<int8_t>(0x6060, 0, mode);
+        std::this_thread::sleep_for(20ms);
     }
 
 
@@ -132,11 +134,41 @@ private:
     {
         RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "PD4E config!");
 
-            set_mode(PD4Motor::OperatingMode::Homing);
-            AsyncWrite<uint16_t>(0x6098, 0, 0x23); // 35 decimal
+            // set_transition(PD4Motor::TransitionCommand::Shutdown);
+            // set_transition(PD4Motor::TransitionCommand::SwitchOn);
 
+            // set_transition(PD4Motor::TransitionCommand::EnableOperation);
+
+            // // set position unit (meter)
+            // AsyncWrite<uint8_t>(0x60A8, 0, 0x01);
+            // std::this_thread::sleep_for(20ms);
+            //set the homing method
+            // AsyncWrite<uint8_t>(0x6098, 0, 35); // 35 decimal 0x23 Hexadecimal  // 37 decimal 0x25 Hexadecimal
+            // std::this_thread::sleep_for(20ms);
+            // set_mode(PD4Motor::OperatingMode::Homing);
+
+             //set the homing method
+            set_mode(PD4Motor::OperatingMode::Homing);
+            puts("1");
+            Wait(AsyncWrite<uint8_t>(0x6098, 0, 0x23)); // 35 decimal 0x23 Hexadecimal  // 37 decimal 0x25 Hexadecimal
+            Wait(AsyncWrite<uint32_t>(0x607C, 0, 0x0));  // set offest to 0
+            puts("2");
+            
             set_transition(PD4Motor::TransitionCommand::Shutdown);
             set_transition(PD4Motor::TransitionCommand::SwitchOn);
+            puts("3");
+            //set_transition(PD4Motor::TransitionCommand::EnableOperation);
+            puts("4");
+            Wait(AsyncWrite<uint16_t>(0x6040, 0, 0x1F)); //start homing
+            puts("5");
+            
+            std::this_thread::sleep_for(500ms);
+            //set_transition(PD4Motor::TransitionCommand::Shutdown);
+            //set_transition(PD4Motor::TransitionCommand::SwitchOn);
+            
+            
+            set_mode(PD4Motor::OperatingMode::Velocity);
+
     }
 
     void OnDeconfig(::std::function<void(::std::error_code ec)> /*res*/) noexcept override

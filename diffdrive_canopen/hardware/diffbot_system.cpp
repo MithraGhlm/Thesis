@@ -106,12 +106,12 @@ hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_activate(
 {
   RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Activating ...please wait...");
 
-//  comms_.motor2_->set_transition(PD4Motor::TransitionCommand::Shutdown);
+// //  comms_.motor2_->set_transition(PD4Motor::TransitionCommand::Shutdown);
 
-  comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
-  comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
-  comms_.wheel_l_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
-  comms_.wheel_r_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
+//   comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
+//   comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
+//   comms_.wheel_l_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
+//   comms_.wheel_r_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
 
 
   RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Successfully activated!");
@@ -169,11 +169,11 @@ hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   // comms_.read_encoder_values(); 
-  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue();
-  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue();
+  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800);
+  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2*M_PI)/60;
 
-  comms_.wheel_r_->pos = comms_.wheel_l_->get_PositionActualValue();
-  comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue();
+  comms_.wheel_r_->pos = comms_.wheel_r_->get_PositionActualValue()*(M_PI/1800);
+  comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue()*(2*M_PI)/60;
 
 RCLCPP_INFO(
   rclcpp::get_logger("DiffDriveCanOpenHardware"),
@@ -188,10 +188,10 @@ RCLCPP_INFO(
 hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f\n", comms_.wheel_l_->cmd);
+  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*60/(2*M_PI), comms_.wheel_r_->cmd*60/(2*M_PI));
 
-  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd));
-  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd));
+  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*60/(2*M_PI)));
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*60/(2*M_PI)));
 
   return hardware_interface::return_type::OK;
 }
