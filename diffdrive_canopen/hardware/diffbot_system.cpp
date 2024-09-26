@@ -108,11 +108,8 @@ hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_activate(
 
 // //  comms_.motor2_->set_transition(PD4Motor::TransitionCommand::Shutdown);
 
-//   comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
-//   comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
-//   comms_.wheel_l_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
-//   comms_.wheel_r_->set_transition(PD4Motor::TransitionCommand::EnableOperation);
-
+  comms_.wheel_l_->set_mode(PD4Motor::OperatingMode::Velocity);
+  comms_.wheel_r_->set_mode(PD4Motor::OperatingMode::Velocity);
 
   RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "Successfully activated!");
 
@@ -168,7 +165,8 @@ std::vector<hardware_interface::CommandInterface> DiffDriveCanOpenHardware::expo
 hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
-  // comms_.read_encoder_values(); 
+  // convert tenths of degree to rad 
+
   comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800);
   comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2*M_PI)/60;
 
@@ -188,10 +186,13 @@ RCLCPP_INFO(
 hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*60/(2*M_PI), comms_.wheel_r_->cmd*60/(2*M_PI));
+  // convert rad/s to RPM
+  double coeff = 60/(2*M_PI);
 
-  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*60/(2*M_PI)));
-  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*60/(2*M_PI)));
+  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff, comms_.wheel_r_->cmd*coeff);
+  
+  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff));
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff));
 
   return hardware_interface::return_type::OK;
 }
