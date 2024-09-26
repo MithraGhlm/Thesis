@@ -12,17 +12,21 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    use_ros2_control = LaunchConfiguration('use_ros2_control', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time') #, default='true')
+    use_ros2_control = LaunchConfiguration('use_ros2_control') #, default='true')
 
     # Get the xacro file path
     xacro_file_name = 'robot.urdf.xacro'
     pkg_path = os.path.join(get_package_share_directory('turtlebot3_gazebo'))
     xacro_file = os.path.join(pkg_path, 'descriptions', xacro_file_name)
 
-    # Command to process the xacro file and convert it to urdf
-    robot_description_config = Command(['xacro ', xacro_file])
-    params = {'robot_description': robot_description_config, 'use_sim_time': use_sim_time, 'use_ros2_control': use_ros2_control}
+    # # Command to process the xacro file and convert it to urdf
+    # robot_description_config = Command(['xacro ', xacro_file])
+    # params = {'robot_description': robot_description_config, 'use_sim_time': use_sim_time, 'use_ros2_control': use_ros2_control}
+
+    robot_description_config = Command(['xacro ', xacro_file, ' use_ros2_control:=', use_ros2_control, ' sim_mode:=', use_sim_time])
+    params = {'robot_description': robot_description_config, 'use_sim_time': use_sim_time}
+
 
 
 
