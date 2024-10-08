@@ -17,6 +17,7 @@ def generate_launch_description():
             parameters=[joy_params, {'use_sim_time': use_sim_time}],
          )
 
+    # teleop_twist_joy: takes a joy msg and publishes a twist msg
     teleop_node = Node(
             package='teleop_twist_joy',
             executable='teleop_node',
