@@ -17,6 +17,7 @@
   <build_depend>pcl_ros</build_depend>
   <build_depend>laser_geometry</build_depend>
   <build_depend>PCL</build_depend>
+  <build_depend>visualization_msgs</build_depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

@@ -11,14 +11,18 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(laser_geometry REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(PCL 1.3 REQUIRED)
 #find_package(PCL 1.3 REQUIRED COMPONENTS common filters)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(Boost REQUIRED COMPONENTS date_time)
+find_package(visualization_msgs REQUIRED)
+
 
 
 include_directories(${PCL_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -31,6 +35,7 @@ ament_target_dependencies(docking
   std_msgs
   sensor_msgs
   laser_geometry
+  visualization_msgs
   pcl_conversions
   pcl_ros
   PCL
