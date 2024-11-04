@@ -42,7 +42,7 @@ public:
     // Publisher for intermediate PointCloud2 data (visualization or debug)
     pointcloud2_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("processed_PC2", 10);
 
-    line_marker_pub_=this->create_publisher<visualization_msgs::msg::Marker>("Marker", 10);
+    marker_pub_=this->create_publisher<visualization_msgs::msg::Marker>("Marker", 10);
   }
 
 private:
@@ -126,7 +126,7 @@ private:
     // Extract line 1 points from data
     extract.setInputCloud(cloud_pc);
     extract.setIndices(line1_inliers);
-    extract.setNegative(true);
+    extract.setNegative(true); // if false, removes the outliers of line1
     extract.setKeepOrganized (true);
     extract.filter(*cloud_pc);
 
@@ -191,9 +191,9 @@ private:
 
   void findCrossShape(const std::vector<pcl::ModelCoefficients::Ptr> &coeffs, const std::vector<pcl::PointIndices::Ptr> &inliers)
   {
-    // Defining a target angle for "cross" detection (e.g., 90 degrees, in radians)
+    // Defining a target angle for "cross" detection (in radians)
     const float target_angle = pcl::deg2rad(60.0f); 
-    const float angle_tolerance = pcl::deg2rad(5.0f); // Acceptable tolerance range
+    const float angle_tolerance = pcl::deg2rad(5.0f); // Acceptable tolerance
 
     for (size_t i = 0; i < coeffs.size(); ++i)
     {
@@ -230,8 +230,8 @@ private:
     marker2.id = 1;
     marker1.type = visualization_msgs::msg::Marker::LINE_STRIP;
     marker2.type = visualization_msgs::msg::Marker::LINE_STRIP;
-    marker1.action = visualization_msgs::msg::Marker::ADD;
-    marker2.action = visualization_msgs::msg::Marker::ADD;
+    // marker1.action = visualization_msgs::msg::Marker::ADD;
+    // marker2.action = visualization_msgs::msg::Marker::ADD;
     // Set line width
     marker1.scale.x = marker2.scale.x = 0.03; 
     marker1.scale.y = marker2.scale.y = 0.03; 
@@ -254,19 +254,66 @@ private:
     p1_end.y = p1_start.y + line1->values[4]; 
 
     p2_start.x = line2->values[0]; p2_start.y = line2->values[1]; p2_start.z = 0.0;
-    p2_end.x = p2_start.x + line2->values[3]; 
-    p2_end.y = p2_start.y + line2->values[4]; 
+    p2_end.x = p2_start.x + 0.5*line2->values[3]; 
+    p2_end.y = p2_start.y + 0.5*line2->values[4]; 
 
     marker1.points.push_back(p1_start); marker1.points.push_back(p1_end);
     marker2.points.push_back(p2_start); marker2.points.push_back(p2_end);
 
     // // Publish markers
-    // if(inliers1->indices.size() > 40){
-       line_marker_pub_->publish(marker1);
-    // }
-    // if(inliers2->indices.size() > 40){
-       line_marker_pub_->publish(marker2);
-    // }
+    if(inliers1->indices.size() > 30){
+      //marker_pub_->publish(marker1);
+      marker1.action = visualization_msgs::msg::Marker::ADD; //ADD=0, DELETE=2
+      marker_pub_->publish(marker1);
+      //publishLineStartPoint(p1_start, visualization_msgs::msg::Marker::ADD);
+
+    } else { // delete the marker if the line is out of scope
+      marker1.action = visualization_msgs::msg::Marker::DELETE;
+      marker_pub_->publish(marker1);
+      //publishLineStartPoint(p1_start, visualization_msgs::msg::Marker::DELETE);
+    }
+    if(inliers2->indices.size() > 30){
+      marker2.action = visualization_msgs::msg::Marker::ADD;
+      marker_pub_->publish(marker2);
+      //publishLineStartPoint(p2_start, visualization_msgs::msg::Marker::ADD);
+    } else {
+      marker2.action = visualization_msgs::msg::Marker::DELETE;
+      marker_pub_->publish(marker2);
+      //publishLineStartPoint(p2_start, visualization_msgs::msg::Marker::DELETE);
+    }
+  }
+
+  void publishLineStartPoint(const geometry_msgs::msg::Point& point, const int32_t& action) //action: ADD=0, DELETE=2
+  {
+    visualization_msgs::msg::Marker marker;
+
+    marker.header.frame_id = "laser_frame";
+    marker.header.stamp = this->get_clock()->now();
+    marker.ns = "point";
+    marker.id = 2;
+    marker.type = visualization_msgs::msg::Marker::CUBE;
+    marker.action = action;
+
+    marker.scale.x = 0.05; 
+    marker.scale.y = 0.05; 
+    marker.scale.z = 0.05;
+
+    // Set color
+    marker.color.r = 0.0;
+    marker.color.g = 0.0;
+    marker.color.b = 1.0;
+    marker.color.a = 1.0;
+
+    // Set position for CUBE
+    marker.pose.position.x = point.x;
+    marker.pose.position.y = point.y;
+    marker.pose.position.z = 0.0;
+
+    marker_pub_->publish(marker);
+  }
+
+  bool is_close_enough(){
+    return true;
   }
 
   // publish only one line
@@ -296,7 +343,7 @@ private:
 
     // setting threshold for the minimum number of inliers in a line
     if(inliers->indices.size() > 40){
-        line_marker_pub_->publish(marker);
+        marker_pub_->publish(marker);
     }
     
 
@@ -312,7 +359,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
 
   //publisher for visualization markers
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr line_marker_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
 };
 
 
