@@ -28,6 +28,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 # Add the executable
 add_executable(docking src/detect_docking_station.cpp)
+add_executable(cSection src/detect_line_cross_section.cpp)
 
 # Link dependencies
 ament_target_dependencies(docking
@@ -41,9 +42,21 @@ ament_target_dependencies(docking
   PCL
 )
 
+ament_target_dependencies(cSection
+  rclcpp
+  std_msgs
+  sensor_msgs
+  laser_geometry
+  visualization_msgs
+  pcl_conversions
+  pcl_ros
+  PCL
+)
+
 # Install the target executable
 install(TARGETS
   docking
+  cSection
   DESTINATION lib/${PROJECT_NAME}
 )
 
