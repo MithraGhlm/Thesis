@@ -3,6 +3,8 @@
 #include <memory>
 #include <iostream>
 #include <string>
+#include <math.h>
+#include <stdio.h>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp> 
@@ -42,7 +44,10 @@ public:
     // Publisher for intermediate PointCloud2 data (visualization or debug)
     pointcloud2_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("processed_PC2", 10);
 
-    marker_pub_=this->create_publisher<visualization_msgs::msg::Marker>("Marker", 10);
+    marker_pub_=this->create_publisher<visualization_msgs::msg::Marker>("Lines_startPoint_Marker", 10);
+    marker_pub_1_=this->create_publisher<visualization_msgs::msg::Marker>("Line1_Marker", 10);
+    marker_pub_2_=this->create_publisher<visualization_msgs::msg::Marker>("Line2_Marker", 10);
+    marker_pub_3_=this->create_publisher<visualization_msgs::msg::Marker>("Intersection_Marker", 10);
   }
 
 private:
@@ -78,7 +83,7 @@ private:
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_LINE);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setDistanceThreshold(0.004); // Adjust based on point cloud
+    seg.setDistanceThreshold(0.005); // Adjust based on point cloud
     //seg.setMaxIterations(1000);
 
 
@@ -193,7 +198,7 @@ private:
   {
     // Defining a target angle for "cross" detection (in radians)
     const float target_angle = pcl::deg2rad(60.0f); 
-    const float angle_tolerance = pcl::deg2rad(5.0f); // Acceptable tolerance
+    const float angle_tolerance = pcl::deg2rad(10.0f); // Acceptable tolerance
 
     for (size_t i = 0; i < coeffs.size(); ++i)
     {
@@ -260,27 +265,103 @@ private:
     marker1.points.push_back(p1_start); marker1.points.push_back(p1_end);
     marker2.points.push_back(p2_start); marker2.points.push_back(p2_end);
 
-    // // Publish markers
-    if(inliers1->indices.size() > 30){
-      //marker_pub_->publish(marker1);
-      marker1.action = visualization_msgs::msg::Marker::ADD; //ADD=0, DELETE=2
-      marker_pub_->publish(marker1);
-      //publishLineStartPoint(p1_start, visualization_msgs::msg::Marker::ADD);
+    // intermidiate variable to hold marker action
+    int32_t marker_action;
 
-    } else { // delete the marker if the line is out of scope
-      marker1.action = visualization_msgs::msg::Marker::DELETE;
-      marker_pub_->publish(marker1);
-      //publishLineStartPoint(p1_start, visualization_msgs::msg::Marker::DELETE);
+    // check if the the starting points of lines are not too far away
+    bool close_enough = is_close_enough(p1_start, p2_start);
+    
+    if(close_enough){
+      if(inliers1->indices.size() > 20 && inliers2->indices.size() > 20){ // Publish markers
+
+        marker1.action = visualization_msgs::msg::Marker::ADD;
+        marker2.action = visualization_msgs::msg::Marker::ADD;
+        marker_action = visualization_msgs::msg::Marker::ADD;
+        
+      } else { // delete the marker if the line is out of scope
+        marker1.action = visualization_msgs::msg::Marker::DELETE;
+        marker2.action = visualization_msgs::msg::Marker::DELETE;
+        marker_action = visualization_msgs::msg::Marker::DELETE;
+      }
+
+      marker_pub_1_->publish(marker1);
+      marker_pub_2_->publish(marker2);
+      publishLineStartPoint(p1_start, marker_action);
+      publishInterSectionPoint(line1,line2, marker_action);
     }
-    if(inliers2->indices.size() > 30){
-      marker2.action = visualization_msgs::msg::Marker::ADD;
-      marker_pub_->publish(marker2);
-      //publishLineStartPoint(p2_start, visualization_msgs::msg::Marker::ADD);
-    } else {
-      marker2.action = visualization_msgs::msg::Marker::DELETE;
-      marker_pub_->publish(marker2);
-      //publishLineStartPoint(p2_start, visualization_msgs::msg::Marker::DELETE);
+  }
+
+  inline double Det(double a, double b, double c, double d)
+  {
+    return a*d - b*c;
+  }
+
+  //Calculate intersection of two lines.
+  void publishInterSectionPoint(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2, const int32_t& action)
+  {
+    // 2D Line-line intersection using determinants
+    double ixOut, iyOut; // the output intersection point
+    geometry_msgs::msg::Point p1_start, p1_end, p2_start, p2_end;
+    p1_start.x = line1->values[0]; p1_start.y = line1->values[1]; p1_start.z = 0.0;
+    p1_end.x = p1_start.x + line1->values[3]; 
+    p1_end.y = p1_start.y + line1->values[4]; 
+
+    p2_start.x = line2->values[0]; p2_start.y = line2->values[1]; p2_start.z = 0.0;
+    p2_end.x = p2_start.x + 0.5*line2->values[3]; 
+    p2_end.y = p2_start.y + 0.5*line2->values[4];
+
+    double detL1 = Det(p1_start.x, p1_start.y, p1_end.x, p1_end.y);
+    double detL2 = Det(p2_start.x, p2_start.y, p2_end.x, p2_end.y);
+    double x1mx2 = p1_start.x - p1_end.x;
+    double x3mx4 = p2_start.x - p2_end.x;
+    double y1my2 = p1_start.y - p1_end.y;
+    double y3my4 = p2_start.y - p2_end.y;
+
+    double xnom = Det(detL1, x1mx2, detL2, x3mx4);
+    double ynom = Det(detL1, y1my2, detL2, y3my4);
+    double denom = Det(x1mx2, y1my2, x3mx4, y3my4);
+
+    if(denom == 0.0)//Lines don't seem to cross
+    {
+      ixOut = NAN;
+      iyOut = NAN;
     }
+
+    ixOut = xnom / denom;
+    iyOut = ynom / denom;
+    if(!isfinite(ixOut) || !isfinite(iyOut)) //Probably a numerical issue
+      RCLCPP_INFO(this->get_logger(), "There has been a numerical issue in calculating the intersection point.");
+
+    // End of line detection
+
+    
+    // Marker for intersection point
+    visualization_msgs::msg::Marker marker;
+
+    marker.header.frame_id = "laser_frame";
+    marker.header.stamp = this->get_clock()->now();
+    marker.ns = "intersection";
+    marker.id = 3;
+    marker.type = visualization_msgs::msg::Marker::SPHERE;
+    marker.action = action;
+
+    marker.scale.x = 0.08; 
+    marker.scale.y = 0.08; 
+    marker.scale.z = 0.08;
+
+    // Set color
+    marker.color.r = 1.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    marker.color.a = 1.0;
+
+    // Set position for SPHERE
+    marker.pose.position.x = ixOut;
+    marker.pose.position.y = iyOut;
+    marker.pose.position.z = 0.0;
+
+    marker_pub_3_->publish(marker);
+
   }
 
   void publishLineStartPoint(const geometry_msgs::msg::Point& point, const int32_t& action) //action: ADD=0, DELETE=2
@@ -294,14 +375,14 @@ private:
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.action = action;
 
-    marker.scale.x = 0.05; 
-    marker.scale.y = 0.05; 
-    marker.scale.z = 0.05;
+    marker.scale.x = 0.08; 
+    marker.scale.y = 0.08; 
+    marker.scale.z = 0.08;
 
     // Set color
-    marker.color.r = 0.0;
-    marker.color.g = 0.0;
-    marker.color.b = 1.0;
+    marker.color.r = 1.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
     marker.color.a = 1.0;
 
     // Set position for CUBE
@@ -312,7 +393,14 @@ private:
     marker_pub_->publish(marker);
   }
 
-  bool is_close_enough(){
+  bool is_close_enough(const geometry_msgs::msg::Point &p1, const geometry_msgs::msg::Point &p2){
+    const float delt_x = p1.x - p2.x;
+    const float delt_y = p1.y - p2.y;
+    const float dist = sqrt(pow(delt_x, 2) + pow(delt_y, 2));
+    if(dist > 0.3){
+      return false;
+    }
+    std::cout << "Distance between starting points is: " << dist << std::endl;
     return true;
   }
 
@@ -346,7 +434,6 @@ private:
         marker_pub_->publish(marker);
     }
     
-
     std::cout << "number of inliers: " << inliers->indices.size() << std::endl;
   }
 
@@ -359,7 +446,10 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
 
   //publisher for visualization markers
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;  // start point of lines
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_1_; // line 1
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_2_; // line 2
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_3_; // two lines intersection point
 };
 
 
