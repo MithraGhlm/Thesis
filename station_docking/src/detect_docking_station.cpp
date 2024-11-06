@@ -24,7 +24,6 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/common/angles.h>
 #include <visualization_msgs/msg/marker_array.hpp>
-//#include "lineLineIntersect.hpp"
 
 
 
@@ -48,6 +47,7 @@ public:
     marker_pub_1_=this->create_publisher<visualization_msgs::msg::Marker>("Line1_Marker", 10);
     marker_pub_2_=this->create_publisher<visualization_msgs::msg::Marker>("Line2_Marker", 10);
     marker_pub_3_=this->create_publisher<visualization_msgs::msg::Marker>("Intersection_Marker", 10);
+    intersectPoint_pub_=this->create_publisher<geometry_msgs::msg::Point>("Intersection_Point", 10);
   }
 
 private:
@@ -94,27 +94,6 @@ private:
     std::vector<pcl::ModelCoefficients::Ptr> coeffs;
     std::vector<pcl::PointIndices::Ptr> inliers;
 
-    // std::cout << "Entering while loop ((((((( " << std::endl;
-    // while(true){
-
-    //     seg.setInputCloud(cloud_pc);
-    //     seg.segment(*line_inliers, *line_coefficients);
-
-    //     // Check if any line was detected at all
-    //     if (line_inliers->indices.empty()) {
-    //         break;
-    //     }
-    //     std::cout << "line_coefficients: " << *line_coefficients << std::endl;
-    //     coeffs.push_back(line_coefficients);
-        
-    //     // Extract the line points from the pointcloud data
-    //     extract.setInputCloud(cloud_pc);
-    //     extract.setIndices(line_inliers);
-    //     extract.setNegative(true);
-    //     extract.filter(*cloud_pc);
-    // }
-    // std::cout << "number of lines found is: " << coeffs.size() << std::endl;
-    // std::cout << "Exiting while loop )))))))) " << std::endl;
 
     // /***************************************************
     // Detect the 1st line using RANSAC
@@ -167,9 +146,6 @@ private:
     // std::string isOrganized = (cloud_pc.isOrganized()) ? "Dataset is organized." : "Dataset is unorganized.";
     // std::cout << isOrganized << std::endl;
     // std::cout << "The dataset height is: " << cloud_pc.height << std::endl;
-    
-
-    // Performing PCL line detection
 
     
     // Converting back from PCLPointCloud to PCLPointCloud2 (for better compatibility with ROS)
@@ -184,12 +160,11 @@ private:
     // publishing PointCloud2 result
     pointcloud2_publisher_->publish(output_cloud);
 
-    // Converting filtered PointCloud2 back to LaserScan (is needed?)
+    // Converting filtered PointCloud2 back to LaserScan (is it needed?)
     // implement this conversion if the result in LaserScan format is needed
 
     // Publishing the final processed LaserScan
     // scan_publisher_->publish(processed_scan_msg);
-
 
   } // scan_cb
 
@@ -214,7 +189,6 @@ private:
         // Check if the angle is close to the target angle for a cross shape
         if (std::abs(angle - target_angle) < angle_tolerance)
         {
-          //RCLCPP_INFO(this->get_logger(), "Cross detected between lines %ld and %ld", i, j);
           publishCrossMarker(coeffs[i], coeffs[j], inliers[i], inliers[j]);
           return;
         }
@@ -235,8 +209,7 @@ private:
     marker2.id = 1;
     marker1.type = visualization_msgs::msg::Marker::LINE_STRIP;
     marker2.type = visualization_msgs::msg::Marker::LINE_STRIP;
-    // marker1.action = visualization_msgs::msg::Marker::ADD;
-    // marker2.action = visualization_msgs::msg::Marker::ADD;
+
     // Set line width
     marker1.scale.x = marker2.scale.x = 0.03; 
     marker1.scale.y = marker2.scale.y = 0.03; 
@@ -272,7 +245,7 @@ private:
     bool close_enough = is_close_enough(p1_start, p2_start);
     
     if(close_enough){
-      if(inliers1->indices.size() > 20 && inliers2->indices.size() > 20){ // Publish markers
+      if(inliers1->indices.size() > 15 && inliers2->indices.size() > 15){ // Publish markers
 
         marker1.action = visualization_msgs::msg::Marker::ADD;
         marker2.action = visualization_msgs::msg::Marker::ADD;
@@ -299,9 +272,10 @@ private:
   //Calculate intersection of two lines.
   void publishInterSectionPoint(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2, const int32_t& action)
   {
-    // 2D Line-line intersection using determinants
+    // 2D Line-line intersection (using determinants)
     double ixOut, iyOut; // the output intersection point
     geometry_msgs::msg::Point p1_start, p1_end, p2_start, p2_end;
+    geometry_msgs::msg::Point intersectPoint;
     p1_start.x = line1->values[0]; p1_start.y = line1->values[1]; p1_start.z = 0.0;
     p1_end.x = p1_start.x + line1->values[3]; 
     p1_end.y = p1_start.y + line1->values[4]; 
@@ -362,6 +336,12 @@ private:
 
     marker_pub_3_->publish(marker);
 
+
+    // Topic publishing the point for robot to follow
+    intersectPoint.x = ixOut;
+    intersectPoint.y = iyOut;
+    intersectPoint.z = 0.0;
+    intersectPoint_pub_->publish(intersectPoint);
   }
 
   void publishLineStartPoint(const geometry_msgs::msg::Point& point, const int32_t& action) //action: ADD=0, DELETE=2
@@ -405,7 +385,8 @@ private:
   }
 
   // publish only one line
-  void publishLine(const pcl::ModelCoefficients::Ptr &line, const pcl::PointIndices::Ptr &inliers, const float r, const float g, const float b){
+  void publishLine(const pcl::ModelCoefficients::Ptr &line, const pcl::PointIndices::Ptr &inliers, const float r, const float g, const float b)
+  {
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = "laser_frame";
     marker.header.stamp = this->get_clock()->now();
@@ -450,6 +431,7 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_1_; // line 1
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_2_; // line 2
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_3_; // two lines intersection point
+  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr intersectPoint_pub_; // intersection point to send to motion control
 };
 
 
@@ -482,7 +464,7 @@ int main(int argc, char **argv)
   });
 
   // Create a Rate object with 10 Hz
-  rclcpp::Rate rate(100);
+  rclcpp::Rate rate(500);
 
   try {
         while (rclcpp::ok()) {
