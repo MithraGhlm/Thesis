@@ -340,7 +340,7 @@ private:
     // Topic publishing the point for robot to follow
     intersectPoint.x = ixOut;
     intersectPoint.y = iyOut;
-    intersectPoint.z = 0.0;
+    intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
     intersectPoint_pub_->publish(intersectPoint);
   }
 
