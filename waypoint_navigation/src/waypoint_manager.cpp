@@ -11,16 +11,17 @@ public:
     WaypointRecorder()
         : Node("waypoint_recorder"), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
         joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&WaypointRecorder::joyCallback, this, std::placeholders::_1));
+            "/joy", 10, std::bind(&WaypointRecorder::joystick_cb, this, std::placeholders::_1));
 
+        // NAV2 listens to /goal_pose topic for goal commands
         waypoint_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
 
         RCLCPP_INFO(this->get_logger(), "WaypointRecorder node started.");
     }
 
 private:
-    void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
-        // Assuming button 0 on the joystick triggers the waypoint saving
+    void joystick_cb(const sensor_msgs::msg::Joy::SharedPtr msg) {
+        // Button 0 triggers the waypoint saving (button X)
         if (msg->buttons[0] == 1) {
             geometry_msgs::msg::PoseStamped current_pose;
             if (getRobotPose(current_pose)) {
@@ -29,6 +30,11 @@ private:
                             current_pose.pose.position.x, current_pose.pose.position.y);
             }
         }
+        // Button 3 triggers the start of waypoint following (button Triangle)
+        if (msg->buttons[3] == 1) {
+        RCLCPP_INFO(this->get_logger(), "Starting waypoint navigation...");
+        followWaypoints();
+    }
     }
 
     bool getRobotPose(geometry_msgs::msg::PoseStamped &pose) {
@@ -53,7 +59,11 @@ private:
 
     void followWaypoints() {
         for (const auto &waypoint : waypoints_) {
+            RCLCPP_INFO(this->get_logger(), "Navigating to waypoint at (%.2f, %.2f)", 
+                    waypoint.pose.position.x, waypoint.pose.position.y);
+
             waypoint_pub_->publish(waypoint);
+            // TODO: check for feedback from NAV2 to confirm that the robot has reached the waypoint
             rclcpp::sleep_for(std::chrono::seconds(5));  // Wait for the robot to reach the waypoint
         }
         RCLCPP_INFO(this->get_logger(), "Finished following all waypoints.");
@@ -62,13 +72,16 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr waypoint_pub_;
 
-    // tf2_ros::Buffer Stores transformations and provides lookup functions to get the current position and orientation of the robot.
-    // The tf_buffer_ object keeps a history of recent transforms between different frames. It's used to track the transformation from the map frame to the base_link frame (the robot's position).
-    // Initializing tf_buffer_ with get_clock() allows it to sync with the ROS2 system clock for accurate timing of transformations.
-    // tf_buffer_ Stores and provides access to frame transformations.
+    /* tf2_ros::Buffer Stores transformations and provides lookup functions to get the current position and orientation of the robot.
+     The tf_buffer_ object keeps a history of recent transforms between different frames. It's used to track the transformation from the map frame to the base_link frame (the robot's position).
+     Initializing tf_buffer_ with get_clock() allows it to sync with the ROS2 system clock for accurate timing of transformations.
+     tf_buffer_ Stores and provides access to frame transformations.
+    */
     tf2_ros::Buffer tf_buffer_;
-    // tf_listener_ Subscribes to the tf and tf_static topics, where transforms between frames are published, and updates tf_buffer_ with these transforms.
-    // tf_listener_ keeps tf_buffer_ up-to-date with the latest frame data from the ROS2 system.
+
+    /* tf_listener_ Subscribes to the tf and tf_static topics, where transforms between frames are published, and updates tf_buffer_ with these transforms.
+     tf_listener_ keeps tf_buffer_ up-to-date with the latest frame data from the ROS2 system.
+     */
     tf2_ros::TransformListener tf_listener_;
 
     std::vector<geometry_msgs::msg::PoseStamped> waypoints_;
