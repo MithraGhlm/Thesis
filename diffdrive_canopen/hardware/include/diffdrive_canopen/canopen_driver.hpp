@@ -76,8 +76,8 @@ public:
             std::this_thread::sleep_for(20ms);
             //puts("not ready");
         }
-        try{
-            auto res = fu.get(); // throw an exception if the operation failed
+        try{  // throw an exception if the operation failed
+            auto res = fu.get(); 
             //std::cout <<"read successful" << std::endl;
             //RCLCPP_INFO(rclcpp::get_logger("DiffDriveCanOpenHardware"), "read value is %s %d", type, res.value());
             return res.value();
@@ -251,8 +251,10 @@ private:
     io::CanChannel *chan;
     //canopen::AsyncMaster *master_;
     std::thread spinner;
-    std::string canopen_interface_name = "can0";
+    std::string canopen_interface_name = "can0";     
     std::string file_path = "/ros2_ws/install/diffdrive_canopen/include/diffdrive_canopen/diffdrive_canopen/master.dcf";
+    // TODO: make it configurable by adding canopen_interface_name and file_path to the xacro file. Otherwise
+    // it should be build again in every new device!
     
 };
 

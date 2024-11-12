@@ -50,7 +50,7 @@ hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_init(
 
   for (const hardware_interface::ComponentInfo & joint : info_.joints)
   {
-    // DiffBotSystem has exactly two states and one command interface on each joint
+    // DiffBotSystem has exactly two state interfaces and one command interface on each joint
     if (joint.command_interfaces.size() != 1)
     {
       RCLCPP_FATAL(
@@ -130,7 +130,7 @@ hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_deactivate(
 
 
 // When we update pos & vel values, it tells the rest of the ros2_control systme that those wheels pos & vel has changed.
-// ---> the position and velocity value comming from the wheels (Read)
+// ---> the position and velocity value coming from the wheels (Read)
 std::vector<hardware_interface::StateInterface> DiffDriveCanOpenHardware::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
