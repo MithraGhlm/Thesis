@@ -100,7 +100,7 @@ hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_init(
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-
+// TODO: put velocity_mode in on_activate
 hardware_interface::CallbackReturn DiffDriveCanOpenHardware::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {

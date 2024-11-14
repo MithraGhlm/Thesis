@@ -67,7 +67,7 @@ private:
     // Performing PCL downsampling & NAN value removal, hence producing "real" values
     pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
     sor.setInputCloud(cloud);
-    sor.setLeafSize(0.01f, 0.01f, 0.01f); // leaf size of 1cm
+    sor.setLeafSize(0.005f, 0.005f, 0.005f); // leaf size of 1cm
     sor.filter(cloud_filtered);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pc(new pcl::PointCloud<pcl::PointXYZ>());
@@ -86,47 +86,50 @@ private:
     seg.setDistanceThreshold(0.005); // Adjust based on point cloud
     //seg.setMaxIterations(1000);
 
-
     // Detecting lines using RANSAC
-    pcl::ModelCoefficients::Ptr line_coefficients(new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr line_inliers(new pcl::PointIndices);
     pcl::ExtractIndices<pcl::PointXYZ> extract;
     std::vector<pcl::ModelCoefficients::Ptr> coeffs;
     std::vector<pcl::PointIndices::Ptr> inliers;
 
+    // Loop to detect all possible lines
+    int ii = 0;
+    while (cloud_pc->points.size() > 30) { // Stop if there are few points left in the cloud
+        ii++;
+        pcl::ModelCoefficients::Ptr line_coefficients(new pcl::ModelCoefficients);
+        pcl::PointIndices::Ptr line_inliers(new pcl::PointIndices);
+        seg.setInputCloud(cloud_pc);
+        seg.segment(*line_inliers, *line_coefficients);
 
-    // /***************************************************
-    // Detect the 1st line using RANSAC
-    pcl::ModelCoefficients::Ptr line1_coefficients(new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr line1_inliers(new pcl::PointIndices);
-    seg.setInputCloud(cloud_pc);
-    seg.segment(*line1_inliers, *line1_coefficients);
-    coeffs.push_back(line1_coefficients);
-    inliers.push_back(line1_inliers);
-    // std::cout << "line1_coefficients: " << *line1_coefficients << std::endl;
-    //publishLine(line1_coefficients, line1_inliers, 1.0, 0.0, 0.0);
-    
+        // Check if sufficient inliers are found to define a line
+        // if (line_inliers->indices.size() < 10) {
+        //     //std::cout << "No more lines detected or insufficient inliers." << std::endl;
+        //     extract.setInputCloud(cloud_pc);
+        //     extract.setIndices(line_inliers);
+        //     extract.setNegative(true);  // Remove line inliers from cloud
+        //     continue;
+        // }
 
-    // Extract line 1 points from data
-    extract.setInputCloud(cloud_pc);
-    extract.setIndices(line1_inliers);
-    extract.setNegative(true); // if false, removes the outliers of line1
-    extract.setKeepOrganized (true);
-    extract.filter(*cloud_pc);
+        // Store the coefficients and inliers if line detected
+        if (line_inliers->indices.size() > 10){
+          coeffs.push_back(line_coefficients);
+          inliers.push_back(line_inliers);
+        }
+        
+        // std::cout << "Line detected with coefficients: ";
+        // for (const auto &coef : line_coefficients->values) {
+        //     std::cout << coef << " ";
+        // }
+        // std::cout << std::endl;
 
-    // Detect the 2nd line using RANSAC
-    pcl::ModelCoefficients::Ptr line2_coefficients(new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr line2_inliers(new pcl::PointIndices);
-    seg.setInputCloud(cloud_pc);
-    seg.segment(*line2_inliers, *line2_coefficients);
-    coeffs.push_back(line2_coefficients);
-    inliers.push_back(line2_inliers);
-    //publishLine(line2_coefficients, line2_inliers, 0.0, 1.0, 0.0);
+        // Remove the detected line points from the cloud
+        extract.setInputCloud(cloud_pc);
+        extract.setIndices(line_inliers);
+        extract.setNegative(true);  // Remove line inliers from cloud
+        extract.filter(*cloud_pc);
+        //std::cout << "cloud_pc size: " << cloud_pc->points.size() << std::endl;
+    }
 
-    // // publish both lines
-    // publishCrossMarker(line1_coefficients, line2_coefficients, line1_inliers, line2_inliers);
-    // ****************************************************/
-
+    // std::cout << "number of lines: " << coeffs.size() << std::endl; 
     // Calculate intersection point (approximation for now)
     findCrossShape(coeffs, inliers);
 
@@ -160,12 +163,6 @@ private:
     // publishing PointCloud2 result
     pointcloud2_publisher_->publish(output_cloud);
 
-    // Converting filtered PointCloud2 back to LaserScan (is it needed?)
-    // implement this conversion if the result in LaserScan format is needed
-
-    // Publishing the final processed LaserScan
-    // scan_publisher_->publish(processed_scan_msg);
-
   } // scan_cb
 
 
@@ -186,9 +183,12 @@ private:
         // Calculate the angle between the two direction vectors
         float angle = std::acos(dir_i.dot(dir_j) / (dir_i.norm() * dir_j.norm()));
 
+          
         // Check if the angle is close to the target angle for a cross shape
         if (std::abs(angle - target_angle) < angle_tolerance)
         {
+          std::cout << "*******************************" << std::endl;
+          std::cout << "angle between line " << i << " and " << j << "is: " << pcl::rad2deg(angle) << std::endl;
           publishCrossMarker(coeffs[i], coeffs[j], inliers[i], inliers[j]);
           return;
         }
@@ -256,12 +256,12 @@ private:
         marker2.action = visualization_msgs::msg::Marker::DELETE;
         marker_action = visualization_msgs::msg::Marker::DELETE;
       }
-
+    
       marker_pub_1_->publish(marker1);
       marker_pub_2_->publish(marker2);
       publishLineStartPoint(p1_start, marker_action);
       publishInterSectionPoint(line1,line2, marker_action);
-    }
+   } 
   }
 
   inline double Det(double a, double b, double c, double d)
