@@ -26,6 +26,8 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 
 
+#define INLIER_NUM 10
+#define ANGLE_DVA  5.0f
 
 class LidarPclProcessor : public rclcpp::Node
 {
@@ -43,7 +45,7 @@ public:
     // Publisher for intermediate PointCloud2 data (visualization or debug)
     pointcloud2_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("processed_PC2", 10);
 
-    marker_pub_=this->create_publisher<visualization_msgs::msg::Marker>("Lines_startPoint_Marker", 10);
+    marker_pub_=this->create_publisher<visualization_msgs::msg::Marker>("Line_Marker", 10);
     marker_pub_1_=this->create_publisher<visualization_msgs::msg::Marker>("Line1_Marker", 10);
     marker_pub_2_=this->create_publisher<visualization_msgs::msg::Marker>("Line2_Marker", 10);
     marker_pub_3_=this->create_publisher<visualization_msgs::msg::Marker>("Intersection_Marker", 10);
@@ -79,12 +81,14 @@ private:
 
     //==========================================>
 
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
-    seg.setOptimizeCoefficients(true);
+    pcl::SACSegmentation<pcl::PointXYZ> seg(true);
+    seg.setOptimizeCoefficients(false);
     seg.setModelType(pcl::SACMODEL_LINE);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setDistanceThreshold(0.005); // Adjust based on point cloud
-    //seg.setMaxIterations(1000);
+    seg.setMethodType(pcl::SAC_RANSAC); //SAC_MLESAC , SAC_RANSAC
+    seg.setDistanceThreshold(0.01); // Adjust based on point cloud
+    seg.setMaxIterations(100);
+    seg.setNumberOfThreads(4);
+    //seg.setRadiusLimits(0.001f, 2.0f);
 
     // Detecting lines using RANSAC
     pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -92,9 +96,8 @@ private:
     std::vector<pcl::PointIndices::Ptr> inliers;
 
     // Loop to detect all possible lines
-    int ii = 0;
-    while (cloud_pc->points.size() > 30) { // Stop if there are few points left in the cloud
-        ii++;
+    while (cloud_pc->points.size() > 20) { // Stop if there are few points left in the cloud
+
         pcl::ModelCoefficients::Ptr line_coefficients(new pcl::ModelCoefficients);
         pcl::PointIndices::Ptr line_inliers(new pcl::PointIndices);
         seg.setInputCloud(cloud_pc);
@@ -109,11 +112,16 @@ private:
         //     continue;
         // }
 
+        // limiting the expand of inliers
+        pcl::PointIndices::Ptr line_inliers_limitted = limit_line_length(cloud_pc, line_coefficients, line_inliers);
+
+
         // Store the coefficients and inliers if line detected
-        if (line_inliers->indices.size() > 10){
+        if (line_inliers->indices.size() > INLIER_NUM){
           coeffs.push_back(line_coefficients);
           inliers.push_back(line_inliers);
         }
+
         
         // std::cout << "Line detected with coefficients: ";
         // for (const auto &coef : line_coefficients->values) {
@@ -123,7 +131,7 @@ private:
 
         // Remove the detected line points from the cloud
         extract.setInputCloud(cloud_pc);
-        extract.setIndices(line_inliers);
+        extract.setIndices(line_inliers_limitted); 
         extract.setNegative(true);  // Remove line inliers from cloud
         extract.filter(*cloud_pc);
         //std::cout << "cloud_pc size: " << cloud_pc->points.size() << std::endl;
@@ -170,10 +178,11 @@ private:
   {
     // Defining a target angle for "cross" detection (in radians)
     const float target_angle = pcl::deg2rad(60.0f); 
-    const float angle_tolerance = pcl::deg2rad(10.0f); // Acceptable tolerance
+    const float angle_tolerance = pcl::deg2rad(ANGLE_DVA); // Acceptable tolerance
 
     for (size_t i = 0; i < coeffs.size(); ++i)
     {
+      publishLine(coeffs[i], inliers[i], 1,0,0);
       for (size_t j = i + 1; j < coeffs.size(); ++j)
       {
         // Extract direction vectors for lines i and j
@@ -188,15 +197,15 @@ private:
         if (std::abs(angle - target_angle) < angle_tolerance)
         {
           std::cout << "*******************************" << std::endl;
-          std::cout << "angle between line " << i << " and " << j << "is: " << pcl::rad2deg(angle) << std::endl;
-          publishCrossMarker(coeffs[i], coeffs[j], inliers[i], inliers[j]);
+          std::cout << "angle between line " << i << " and " << j << "is: " << pcl::rad2deg(angle) << "and #tot_lines is: " << coeffs.size()<< std::endl;
+          publishCrossMarker(coeffs[i], coeffs[j]); //, inliers[i], inliers[j]);
           return;
         }
       }
     }
   }
 
-  void publishCrossMarker(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2, const pcl::PointIndices::Ptr &inliers1, const pcl::PointIndices::Ptr &inliers2)
+  void publishCrossMarker(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2) //, const pcl::PointIndices::Ptr &inliers1, const pcl::PointIndices::Ptr &inliers2)
   {
     // Create markers for visualization in Rviz
     visualization_msgs::msg::Marker marker1, marker2;
@@ -242,10 +251,10 @@ private:
     int32_t marker_action;
 
     // check if the the starting points of lines are not too far away
-    bool close_enough = is_close_enough(p1_start, p2_start);
+    bool close_enough = is_close_enough(p1_start, p2_start, 0.4f);
     
     if(close_enough){
-      if(inliers1->indices.size() > 15 && inliers2->indices.size() > 15){ // Publish markers
+      //if(inliers1->indices.size() > INLIER_NUM && inliers2->indices.size() > INLIER_NUM){ // Publish markers
 
         marker1.action = visualization_msgs::msg::Marker::ADD;
         marker2.action = visualization_msgs::msg::Marker::ADD;
@@ -261,7 +270,7 @@ private:
       marker_pub_2_->publish(marker2);
       publishLineStartPoint(p1_start, marker_action);
       publishInterSectionPoint(line1,line2, marker_action);
-   } 
+    //}
   }
 
   inline double Det(double a, double b, double c, double d)
@@ -373,15 +382,48 @@ private:
     marker_pub_->publish(marker);
   }
 
-  bool is_close_enough(const geometry_msgs::msg::Point &p1, const geometry_msgs::msg::Point &p2){
+  // returns true if 2 points are closer than a threshold
+  bool is_close_enough(const geometry_msgs::msg::Point &p1, const geometry_msgs::msg::Point &p2, const float thresh){
     const float delt_x = p1.x - p2.x;
     const float delt_y = p1.y - p2.y;
     const float dist = sqrt(pow(delt_x, 2) + pow(delt_y, 2));
-    if(dist > 0.3){
+    if(dist > thresh){
       return false;
     }
-    std::cout << "Distance between starting points is: " << dist << std::endl;
+    // std::cout << "Distance between points is: " << dist << std::endl;
     return true;
+  }
+
+
+  // function to limit the number of points counted as inliers of a line
+  pcl::PointIndices::Ptr limit_line_length(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_pc, const pcl::ModelCoefficients::Ptr& line, pcl::PointIndices::Ptr& inliers)
+  {
+    geometry_msgs::msg::Point p_start;
+    p_start.x = line->values[0]; 
+    p_start.y = line->values[1];
+    //p_start.z = 0.0;
+
+    //pcl::PointIndices::Ptr inliers_filtered(new pcl::PointIndices);
+    std::vector<int> inliers_filtered;
+
+    for ( auto &indx : inliers->indices){
+      const auto &point_xyz = cloud_pc->points[indx];
+
+    // Convert pcl::PointXYZ to geometry_msgs::msg::Point
+      geometry_msgs::msg::Point point;
+      point.x = point_xyz.x;
+      point.y = point_xyz.y;
+      point.z = 0.0f;
+
+      if ( is_close_enough(p_start, point, 0.3f) ){
+        inliers_filtered.push_back(indx); // Keep this index if it's close enough
+      }
+    }
+
+    // Replace the inliers vector with the filtered indices
+    inliers->indices = inliers_filtered;
+
+    return inliers;
   }
 
   // publish only one line
@@ -411,11 +453,11 @@ private:
     marker.points.push_back(p_start); marker.points.push_back(p_end);
 
     // setting threshold for the minimum number of inliers in a line
-    if(inliers->indices.size() > 40){
-        marker_pub_->publish(marker);
-    }
+    // if(inliers->indices.size() > 40){
+     marker_pub_->publish(marker);
+    // }
     
-    std::cout << "number of inliers: " << inliers->indices.size() << std::endl;
+    //std::cout << "number of inliers: " << inliers->indices.size() << std::endl;
   }
 
 
@@ -458,32 +500,8 @@ int main(int argc, char **argv)
   auto node = std::make_shared<LidarPclProcessor>();
   rclcpp::spin(node);
 
-  // Create a lambda function to spin the node in a separate thread
-  auto spin_thread = std::thread([&node]() {
-    rclcpp::spin(node);
-  });
-
-  // Create a Rate object with 10 Hz
-  rclcpp::Rate rate(500);
-
-  try {
-        while (rclcpp::ok()) {
-            std::cout << "Help me body, you are my only hope" << std::endl;
-            rate.sleep();
-        }
-    } catch (const std::exception &e) {
-        // Handle exceptions if needed
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
-
-
   // Shutdown the ROS 2 client library
   rclcpp::shutdown();
-
-  // Join the spin thread to clean up
-  if (spin_thread.joinable()) {
-      spin_thread.join();
-  }
 
   return 0;
 }
