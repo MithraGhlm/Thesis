@@ -24,10 +24,19 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/common/angles.h>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <pcl/io/pcd_io.h>
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
 
-
+#define DBG_INLIER        0
+#define DBG_ANGLE         0
+#define DBG_TARGET        0
+#define DBG_FRAMESCAN     0
 #define INLIER_NUM 10
-#define ANGLE_DVA  5.0f
+#define ANGLE_DVA  10.0f
+#define START_P_DIST 0.33f
 
 class LidarPclProcessor : public rclcpp::Node
 {
@@ -50,9 +59,30 @@ public:
     marker_pub_2_=this->create_publisher<visualization_msgs::msg::Marker>("Line2_Marker", 10);
     marker_pub_3_=this->create_publisher<visualization_msgs::msg::Marker>("Intersection_Marker", 10);
     intersectPoint_pub_=this->create_publisher<geometry_msgs::msg::Point>("Intersection_Point", 10);
+    angles_dbg.open("/ros2_ws/lidar_frames/angles.txt");
+    target_dbg.open("/ros2_ws/lidar_frames/targets.txt");
+    inlier_dbg.open("/ros2_ws/lidar_frames/inliers.txt");
+  }
+  
+  ~LidarPclProcessor() {
+    if (angles_dbg.is_open()) {
+            angles_dbg.close();
+    }
+    if (target_dbg.is_open()) {
+            target_dbg.close();
+    }
+    if (inlier_dbg.is_open()) {
+            inlier_dbg.close();
+    }
   }
 
+
 private:
+  int scan_num = 1;
+  std::ofstream angles_dbg;
+  std::ofstream target_dbg;
+  std::ofstream inlier_dbg;
+
   // Callback function to process the LaserScan data
   void scan_cb(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
   {
@@ -69,7 +99,7 @@ private:
     // Performing PCL downsampling & NAN value removal, hence producing "real" values
     pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
     sor.setInputCloud(cloud);
-    sor.setLeafSize(0.005f, 0.005f, 0.005f); // leaf size of 1cm
+    sor.setLeafSize(0.002f, 0.002f, 0.002f); // leaf size of 1cm
     sor.filter(cloud_filtered);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pc(new pcl::PointCloud<pcl::PointXYZ>());
@@ -88,15 +118,16 @@ private:
     seg.setDistanceThreshold(0.01); // Adjust based on point cloud
     seg.setMaxIterations(100);
     seg.setNumberOfThreads(4);
-    //seg.setRadiusLimits(0.001f, 2.0f);
+    //seg.setRadiusLimits(0.001f, 0.5f);
 
     // Detecting lines using RANSAC
     pcl::ExtractIndices<pcl::PointXYZ> extract;
     std::vector<pcl::ModelCoefficients::Ptr> coeffs;
     std::vector<pcl::PointIndices::Ptr> inliers;
 
+    int frame_num = 1;
     // Loop to detect all possible lines
-    while (cloud_pc->points.size() > 20) { // Stop if there are few points left in the cloud
+    while (cloud_pc->points.size() > 30) { // Stop if there are few points left in the cloud
 
         pcl::ModelCoefficients::Ptr line_coefficients(new pcl::ModelCoefficients);
         pcl::PointIndices::Ptr line_inliers(new pcl::PointIndices);
@@ -113,16 +144,24 @@ private:
         // }
 
         // limiting the expand of inliers
-        pcl::PointIndices::Ptr line_inliers_limitted = limit_line_length(cloud_pc, line_coefficients, line_inliers);
+        //std::cout << " number of inliers before: " << line_inliers->indices.size() << std::endl;
+        limit_line_length(cloud_pc, line_coefficients, line_inliers);
+        //std::cout << " number of inliers after: " << line_inliers->indices.size() << std::endl;
+
 
 
         // Store the coefficients and inliers if line detected
         if (line_inliers->indices.size() > INLIER_NUM){
           coeffs.push_back(line_coefficients);
           inliers.push_back(line_inliers);
+#if DBG_INLIER
+          inlier_dbg << scan_num << "," << frame_num << "\n";
+#endif
         }
-
-        
+#if DBG_FRAMESCAN
+        std::string filename1 = "/ros2_ws/lidar_frames/" + std::to_string(scan_num) + "A_f" + std::to_string(frame_num) + ".pcd";
+        pcl::io::savePCDFileASCII(filename1, *cloud_pc);
+#endif
         // std::cout << "Line detected with coefficients: ";
         // for (const auto &coef : line_coefficients->values) {
         //     std::cout << coef << " ";
@@ -131,10 +170,11 @@ private:
 
         // Remove the detected line points from the cloud
         extract.setInputCloud(cloud_pc);
-        extract.setIndices(line_inliers_limitted); 
+        extract.setIndices(line_inliers); 
         extract.setNegative(true);  // Remove line inliers from cloud
         extract.filter(*cloud_pc);
         //std::cout << "cloud_pc size: " << cloud_pc->points.size() << std::endl;
+        frame_num++;
     }
 
     // std::cout << "number of lines: " << coeffs.size() << std::endl; 
@@ -170,15 +210,35 @@ private:
 
     // publishing PointCloud2 result
     pointcloud2_publisher_->publish(output_cloud);
-
+    scan_num++;
   } // scan_cb
+
+  float computeAngle(const Eigen::Vector2f& dir_i, const Eigen::Vector2f& dir_j) {
+    // Normalize both vectors
+    Eigen::Vector2f normalized_i = dir_i.normalized();
+    Eigen::Vector2f normalized_j = dir_j.normalized();
+    // Ensure consistent direction (dot product is non-negative)
+    if (normalized_i.dot(normalized_j) < 0) {
+        normalized_j = -normalized_j;
+    }
+    // Compute the angle
+    float cos_theta = normalized_i.dot(normalized_j); // Cosine of the angle
+    cos_theta = std::clamp(cos_theta, -1.0f, 1.0f);  // Ensure numerical stability
+    float angle = std::acos(cos_theta);              // Angle in radians
+    return angle * 180.0f / M_PI; // Convert to degrees if needed
+  }
 
 
   void findCrossShape(const std::vector<pcl::ModelCoefficients::Ptr> &coeffs, const std::vector<pcl::PointIndices::Ptr> &inliers)
   {
     // Defining a target angle for "cross" detection (in radians)
-    const float target_angle = pcl::deg2rad(60.0f); 
+    float target_angle = pcl::deg2rad(60.0f); 
     const float angle_tolerance = pcl::deg2rad(ANGLE_DVA); // Acceptable tolerance
+
+    int found_angl = 0;
+    int found_dist = 0;
+    std::vector<float> angles;
+    angles.push_back(static_cast<float>(scan_num));
 
     for (size_t i = 0; i < coeffs.size(); ++i)
     {
@@ -188,24 +248,48 @@ private:
         // Extract direction vectors for lines i and j
         Eigen::Vector2f dir_i(coeffs[i]->values[3], coeffs[i]->values[4]);
         Eigen::Vector2f dir_j(coeffs[j]->values[3], coeffs[j]->values[4]);
-
+        dir_i.normalize();
+        dir_j.normalize();
+        float dot_product = dir_i.dot(dir_j);
+        if (dot_product > 0) {
+            target_angle = pcl::deg2rad(60.0f); 
+        } else if (dot_product < 0) {
+            target_angle = pcl::deg2rad(120.0f); 
+        } else {
+            std::cout << "The lines are perpendicular." << std::endl;
+        }
         // Calculate the angle between the two direction vectors
         float angle = std::acos(dir_i.dot(dir_j) / (dir_i.norm() * dir_j.norm()));
-
+        //float angle = computeAngle(dir_i, dir_j);
+        angles.push_back(pcl::rad2deg(angle));
           
         // Check if the angle is close to the target angle for a cross shape
         if (std::abs(angle - target_angle) < angle_tolerance)
         {
-          std::cout << "*******************************" << std::endl;
-          std::cout << "angle between line " << i << " and " << j << "is: " << pcl::rad2deg(angle) << "and #tot_lines is: " << coeffs.size()<< std::endl;
-          publishCrossMarker(coeffs[i], coeffs[j]); //, inliers[i], inliers[j]);
-          return;
+          found_angl++;
+          bool tmp = publishCrossMarker(coeffs[i], coeffs[j]); //, inliers[i], inliers[j]);
+          if(tmp) found_dist++;
+          std::cout << "angle between line " << i << " and " << j << " is: " << pcl::rad2deg(angle) << std::endl;
+          //return;
         }
       }
     }
+    std::cout << "#scan " << scan_num << ", fnd_angl " << found_angl << ", fnd_dist " << found_dist << ", #lines " << coeffs.size() << std::endl;
+#if DBG_ANGLE
+    if(!found_dist) {
+      if(!found_angl) {
+        angles_dbg << "ANGL_NOT_FOUND,";
+      }
+      // dump all angles to file
+      for (size_t i = 0; i < angles.size(); ++i) {
+        angles_dbg << angles[i] << (i + 1 < angles.size() ? "," : "");
+      }
+      angles_dbg << "\n";
+    }
+#endif
   }
 
-  void publishCrossMarker(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2) //, const pcl::PointIndices::Ptr &inliers1, const pcl::PointIndices::Ptr &inliers2)
+  bool publishCrossMarker(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2) //, const pcl::PointIndices::Ptr &inliers1, const pcl::PointIndices::Ptr &inliers2)
   {
     // Create markers for visualization in Rviz
     visualization_msgs::msg::Marker marker1, marker2;
@@ -251,26 +335,27 @@ private:
     int32_t marker_action;
 
     // check if the the starting points of lines are not too far away
-    bool close_enough = is_close_enough(p1_start, p2_start, 0.4f);
+    bool close_enough = is_close_enough(p1_start, p2_start, START_P_DIST);
     
     if(close_enough){
       //if(inliers1->indices.size() > INLIER_NUM && inliers2->indices.size() > INLIER_NUM){ // Publish markers
-
         marker1.action = visualization_msgs::msg::Marker::ADD;
         marker2.action = visualization_msgs::msg::Marker::ADD;
         marker_action = visualization_msgs::msg::Marker::ADD;
-        
+        publishInterSectionPoint(line1,line2, marker_action, true);
       } else { // delete the marker if the line is out of scope
         marker1.action = visualization_msgs::msg::Marker::DELETE;
         marker2.action = visualization_msgs::msg::Marker::DELETE;
         marker_action = visualization_msgs::msg::Marker::DELETE;
+        publishInterSectionPoint(line1,line2, marker_action, false);
       }
     
       marker_pub_1_->publish(marker1);
       marker_pub_2_->publish(marker2);
       publishLineStartPoint(p1_start, marker_action);
-      publishInterSectionPoint(line1,line2, marker_action);
+      
     //}
+    return close_enough;
   }
 
   inline double Det(double a, double b, double c, double d)
@@ -279,7 +364,7 @@ private:
   }
 
   //Calculate intersection of two lines.
-  void publishInterSectionPoint(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2, const int32_t& action)
+  void publishInterSectionPoint(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2, const int32_t& action, bool pub2motor)
   {
     // 2D Line-line intersection (using determinants)
     double ixOut, iyOut; // the output intersection point
@@ -347,10 +432,15 @@ private:
 
 
     // Topic publishing the point for robot to follow
-    intersectPoint.x = ixOut;
-    intersectPoint.y = iyOut;
-    intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
-    intersectPoint_pub_->publish(intersectPoint);
+    if(pub2motor) {
+      intersectPoint.x = ixOut;
+      intersectPoint.y = iyOut;
+      intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
+      intersectPoint_pub_->publish(intersectPoint);
+#if DBG_TARGET
+      target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
+#endif
+    }
   }
 
   void publishLineStartPoint(const geometry_msgs::msg::Point& point, const int32_t& action) //action: ADD=0, DELETE=2
@@ -391,19 +481,21 @@ private:
       return false;
     }
     // std::cout << "Distance between points is: " << dist << std::endl;
+#if DBG_TARGET
+    if(thresh >= START_P_DIST) target_dbg << dist << ",";
+#endif
     return true;
   }
 
 
   // function to limit the number of points counted as inliers of a line
-  pcl::PointIndices::Ptr limit_line_length(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_pc, const pcl::ModelCoefficients::Ptr& line, pcl::PointIndices::Ptr& inliers)
+  void limit_line_length(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_pc, const pcl::ModelCoefficients::Ptr& line, pcl::PointIndices::Ptr& inliers)
   {
     geometry_msgs::msg::Point p_start;
     p_start.x = line->values[0]; 
     p_start.y = line->values[1];
     //p_start.z = 0.0;
 
-    //pcl::PointIndices::Ptr inliers_filtered(new pcl::PointIndices);
     std::vector<int> inliers_filtered;
 
     for ( auto &indx : inliers->indices){
@@ -415,7 +507,7 @@ private:
       point.y = point_xyz.y;
       point.z = 0.0f;
 
-      if ( is_close_enough(p_start, point, 0.3f) ){
+      if ( is_close_enough(p_start, point, 0.2f) ){
         inliers_filtered.push_back(indx); // Keep this index if it's close enough
       }
     }
@@ -423,7 +515,6 @@ private:
     // Replace the inliers vector with the filtered indices
     inliers->indices = inliers_filtered;
 
-    return inliers;
   }
 
   // publish only one line
