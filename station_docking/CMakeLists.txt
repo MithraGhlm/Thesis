@@ -28,11 +28,23 @@ add_definitions(${PCL_DEFINITIONS})
 
 # Add the executable
 add_executable(detect_docking src/detect_docking_station.cpp)
+add_executable(detect_docking_test src/detect_docking_station_test.cpp)
 add_executable(attach_docking src/attach_to_docking_station.cpp)
-add_executable(cSection src/detect_line_cross_section.cpp)
+add_executable(capture_pcd src/capture_pcd.cpp)
 
 # Link dependencies
 ament_target_dependencies(detect_docking
+  rclcpp
+  std_msgs
+  sensor_msgs
+  laser_geometry
+  visualization_msgs
+  pcl_conversions
+  pcl_ros
+  PCL
+)
+
+ament_target_dependencies(detect_docking_test
   rclcpp
   std_msgs
   sensor_msgs
@@ -54,7 +66,7 @@ ament_target_dependencies(attach_docking
   PCL
 )
 
-ament_target_dependencies(cSection
+ament_target_dependencies(capture_pcd
   rclcpp
   std_msgs
   sensor_msgs
@@ -68,8 +80,9 @@ ament_target_dependencies(cSection
 # Install the target executable
 install(TARGETS
   detect_docking
+  detect_docking_test
   attach_docking
-  cSection
+  capture_pcd
   DESTINATION lib/${PROJECT_NAME}
 )
 

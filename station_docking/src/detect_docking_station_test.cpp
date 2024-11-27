@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <numeric>
 
 #define DBG_INLIER        0
 #define DBG_ANGLE         0
@@ -37,6 +38,7 @@
 #define INLIER_NUM 10
 #define ANGLE_DVA  10.0f
 #define START_P_DIST 0.33f
+#define SAMPLE_NUM 10
 
 class LidarPclProcessor : public rclcpp::Node
 {
@@ -47,9 +49,6 @@ public:
     // Create a subscriber for LaserScan data
     subscription_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
       "/scan", rclcpp::SensorDataQoS(), std::bind(&LidarPclProcessor::scan_cb, this, std::placeholders::_1));
-
-    // Publisher for processed LaserScan data
-    //scan_publisher_ = this->create_publisher<sensor_msgs::msg::LaserScan>("processed_scan", 10);
 
     // Publisher for intermediate PointCloud2 data (visualization or debug)
     pointcloud2_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("processed_PC2", 10);
@@ -83,6 +82,9 @@ private:
   std::ofstream target_dbg;
   std::ofstream inlier_dbg;
 
+  // variables for SMA
+  std::vector<std::pair<float, float>> intersect_points;
+
   // Callback function to process LaserScan data
   void scan_cb(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
   {
@@ -107,15 +109,13 @@ private:
     // Converting from PCLPointCloud2 to PCLPointCloud (for better PCL processing)
     pcl::fromPCLPointCloud2(cloud_filtered, *cloud_pc);
      
-    //std::cout << "Number of points in the filtered point cloud: " << cloud_pc->size() << std::endl;
-
     //==========================================>
 
     pcl::SACSegmentation<pcl::PointXYZ> seg(true);
     seg.setOptimizeCoefficients(false);
     seg.setModelType(pcl::SACMODEL_LINE);
     seg.setMethodType(pcl::SAC_RANSAC); //SAC_MLESAC , SAC_RANSAC
-    seg.setDistanceThreshold(0.01); // maximum distance a point can be from the model to be considered an inlier, in meters(?)
+    seg.setDistanceThreshold(0.01); // maximum distance a point can be from the model to be considered an inlier
     seg.setMaxIterations(100);
     seg.setNumberOfThreads(4);
     //seg.setRadiusLimits(0.001f, 0.5f);
@@ -134,21 +134,8 @@ private:
         seg.setInputCloud(cloud_pc);
         seg.segment(*line_inliers, *line_coefficients);
 
-        // Check if sufficient inliers are found to define a line
-        // if (line_inliers->indices.size() < 10) {
-        //     //std::cout << "No more lines detected or insufficient inliers." << std::endl;
-        //     extract.setInputCloud(cloud_pc);
-        //     extract.setIndices(line_inliers);
-        //     extract.setNegative(true);  // Remove line inliers from cloud
-        //     continue;
-        // }
-
         // limiting the expand of inliers
-        //std::cout << " number of inliers before: " << line_inliers->indices.size() << std::endl;
         limit_line_length(cloud_pc, line_coefficients, line_inliers);
-        //std::cout << " number of inliers after: " << line_inliers->indices.size() << std::endl;
-
-
 
         // Store the coefficients and inliers if line detected
         if (line_inliers->indices.size() > INLIER_NUM){
@@ -162,43 +149,20 @@ private:
         std::string filename1 = "/ros2_ws/lidar_frames/" + std::to_string(scan_num) + "A_f" + std::to_string(frame_num) + ".pcd";
         pcl::io::savePCDFileASCII(filename1, *cloud_pc);
 #endif
-        // std::cout << "Line detected with coefficients: ";
-        // for (const auto &coef : line_coefficients->values) {
-        //     std::cout << coef << " ";
-        // }
-        // std::cout << std::endl;
 
         // Remove the detected line points from the cloud
         extract.setInputCloud(cloud_pc);
         extract.setIndices(line_inliers); 
         extract.setNegative(true);  // Remove line inliers from cloud
         extract.filter(*cloud_pc);
-        //std::cout << "cloud_pc size: " << cloud_pc->points.size() << std::endl;
         frame_num++;
     }
 
-    // std::cout << "number of lines: " << coeffs.size() << std::endl; 
     // Calculate intersection point (approximation for now)
     findCrossShape(coeffs, inliers);
 
-    //==========================================>
+    //==========================================
 
-    // // Printing the x y z of each PointCloud point
-    // for (size_t i=0; i<cloud_pc->size(); i++){
-    //     const auto& point = cloud_pc->points[i];
-    //     std::cout << "Point " << i << ": ["
-    //           << "x = " << point.x << ", "
-    //           << "y = " << point.y << ", "
-    //           << "z = " << point.z << "]"
-    //           << std::endl;
-    // }
-
-    // // check if the dataset is organized or not
-    // std::string isOrganized = (cloud_pc.isOrganized()) ? "Dataset is organized." : "Dataset is unorganized.";
-    // std::cout << isOrganized << std::endl;
-    // std::cout << "The dataset height is: " << cloud_pc.height << std::endl;
-
-    
     // Converting back from PCLPointCloud to PCLPointCloud2 (for better compatibility with ROS)
     pcl::toPCLPointCloud2(*cloud_pc, cloud_filtered);
 
@@ -253,12 +217,12 @@ private:
           found_angl++;
           bool tmp = publishCrossMarker(coeffs[i], coeffs[j]); //, inliers[i], inliers[j]);
           if(tmp) found_dist++;
-          std::cout << "angle between line " << i << " and " << j << " is: " << pcl::rad2deg(angle) << std::endl;
+          //std::cout << "angle between line " << i << " and " << j << " is: " << pcl::rad2deg(angle) << std::endl;
           //return;
         }
       }
     }
-    std::cout << "#scan " << scan_num << ", fnd_angl " << found_angl << ", fnd_dist " << found_dist << ", #lines " << coeffs.size() << std::endl;
+    // std::cout << "#scan " << scan_num << ", fnd_angl " << found_angl << ", fnd_dist " << found_dist << ", #lines " << coeffs.size() << std::endl;
 
     // capture the frame that no cross section was fined in it
 #if DBG_ANGLE
@@ -295,9 +259,9 @@ private:
     marker1.scale.z = marker2.scale.z = 0.0;
 
     // Set color
-    marker1.color.r = 1.0;
+    marker1.color.r = 0.0;
     marker1.color.g = 0.0;
-    marker1.color.b = 0.0;
+    marker1.color.b = 1.0;
     marker1.color.a = 1.0;
     marker2.color.r = 0.0;
     marker2.color.g = 1.0;
@@ -338,9 +302,7 @@ private:
     
       marker_pub_1_->publish(marker1);
       marker_pub_2_->publish(marker2);
-      publishLineStartPoint(p1_start, marker_action);
       
-    //}
     return close_enough;
   }
 
@@ -350,7 +312,7 @@ private:
     return a*d - b*c;
   }
 
-  //Calculate intersection of two lines.
+  //Calculate intersection of two lines
   void publishInterSectionPoint(const pcl::ModelCoefficients::Ptr &line1, const pcl::ModelCoefficients::Ptr &line2, const int32_t& action, bool pub2motor)
   {
     // 2D Line-line intersection (using determinants)
@@ -386,13 +348,10 @@ private:
     iyOut = ynom / denom;
     if(!isfinite(ixOut) || !isfinite(iyOut)) //Probably a numerical issue
       RCLCPP_INFO(this->get_logger(), "There has been a numerical issue in calculating the intersection point.");
-
     // End of line detection
 
-    
     // Marker for intersection point
     visualization_msgs::msg::Marker marker;
-
     marker.header.frame_id = "laser_frame";
     marker.header.stamp = this->get_clock()->now();
     marker.ns = "intersection";
@@ -406,7 +365,7 @@ private:
 
     // Set color
     marker.color.r = 1.0;
-    marker.color.g = 1.0;
+    marker.color.g = 0.0;
     marker.color.b = 0.0;
     marker.color.a = 1.0;
 
@@ -417,46 +376,50 @@ private:
 
     marker_pub_3_->publish(marker);
 
-
-    // Topic publishing the point for robot to follow
+    //=================================
     if(pub2motor) {
-      intersectPoint.x = ixOut;
-      intersectPoint.y = iyOut;
-      intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
-      intersectPoint_pub_->publish(intersectPoint);
-#if DBG_TARGET
-      target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
-#endif
+      float Xs = 0.0; float Ys = 0.0; // holding the sums 
+      float x_SMA = 0.0; float y_SMA = 0.0; // holding the means
+
+      // simple moving average (SMA)
+      intersect_points.push_back({ixOut, iyOut});
+
+      for (const auto& point : intersect_points) {
+          std::cout << "(" << point.first << ", " << point.second << ")" << std::endl;
+      }
+
+      if(intersect_points.size() > SAMPLE_NUM -1){
+        // sum all Xs and all Ys
+        for (const auto& row:intersect_points){
+          Xs += row.first;
+          Ys += row.second;
+        }
+        std::cout << "sum of Xs and Ys: " << Xs << ", " << Ys << std::endl;
+
+        intersect_points.erase(intersect_points.begin()); // Remove the first element of the vector
+
+        // print the new shortened vector
+          std::cout << "Vector contents after erasing the first element: ";
+          for (const auto& p : intersect_points) {
+              std::cout << "(" << p.first << ", " << p.second << ") ";
+          }
+          std::cout << std::endl;
+          
+        x_SMA = Xs / SAMPLE_NUM;
+        y_SMA = Ys / SAMPLE_NUM;
+        //=================================
+
+        intersectPoint.x = x_SMA; // ixOut;
+        intersectPoint.y = y_SMA; // iyOut
+        intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
+        // Topic publishing the point for robot to follow
+        intersectPoint_pub_->publish(intersectPoint);
+
+    #if DBG_TARGET
+        target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
+    #endif
+      }
     }
-  }
-
-  void publishLineStartPoint(const geometry_msgs::msg::Point& point, const int32_t& action) //action: ADD=0, DELETE=2
-  {
-    visualization_msgs::msg::Marker marker;
-
-    marker.header.frame_id = "laser_frame";
-    marker.header.stamp = this->get_clock()->now();
-    marker.ns = "point";
-    marker.id = 2;
-    marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.action = action;
-
-    marker.scale.x = 0.08; 
-    marker.scale.y = 0.08; 
-    marker.scale.z = 0.08;
-
-    // Set color
-    marker.color.r = 1.0;
-    marker.color.g = 1.0;
-    marker.color.b = 0.0;
-    marker.color.a = 1.0;
-
-    // Set position for CUBE
-    marker.pose.position.x = point.x;
-    marker.pose.position.y = point.y;
-    marker.pose.position.z = 0.0;
-
-    marker_pub_->publish(marker);
   }
 
   // returns true if 2 points are closer than a threshold
@@ -467,13 +430,12 @@ private:
     if(dist > thresh){
       return false;
     }
-    // std::cout << "Distance between points is: " << dist << std::endl;
+
 #if DBG_TARGET
     if(thresh >= START_P_DIST) target_dbg << dist << ",";
 #endif
     return true;
   }
-
 
   // function to limit the number of points counted as inliers of a line
   void limit_line_length(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_pc, const pcl::ModelCoefficients::Ptr& line, pcl::PointIndices::Ptr& inliers)
@@ -498,10 +460,8 @@ private:
         inliers_filtered.push_back(indx); // Keep this index if it's close enough
       }
     }
-
     // Replace the inliers vector with the filtered indices
     inliers->indices = inliers_filtered;
-
   }
 
   // publish only one line
@@ -542,34 +502,28 @@ private:
   // LaserScan to PointCloud2 projector
   laser_geometry::LaserProjection projector_;
 
-  // Subscriber and publishers
+  // Subscribers and publishers
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subscription_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
 
-  //publisher for visualization markers
+  //publishers for visualization markers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;  // start point of lines
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_1_; // line 1
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_2_; // line 2
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_3_; // two lines intersection point
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr intersectPoint_pub_; // intersection point to send to motion control
-};
 
 
- // The six coefficients of the line:
- // [point_on_line.x point_on_line.y point_on_line.z line_direction.x line_direction.y line_direction.z]
- inline std::ostream& operator<<(std::ostream& s, const  ::pcl::ModelCoefficients & v)
-  {
-    s << "header: " << std::endl;
-    s << v.header;
-    s << "values[]" << std::endl;
-    for (std::size_t i = 0; i < v.values.size (); ++i)
-    {
-      s << "  values[" << i << "]: ";
-      s << "  " << v.values[i] << std::endl;
-    }
-    return (s);
-  }
+  //=====================================
+  // Testing
+  std::vector<float> dist_thresh = {0.0025, 0.005, 0.01};   // how close points are to the model (meters)
+  std::vector<int> max_iteration = {50, 100, 200, 500, 1000}; // iteration of RANSAC
+  std::vector<int> num_of_inliers = {10, 15, 20, 25}; // min allowed number of inliers in a line
+  std::vector<float> model_angle_deviation = {3.0, 5.0, 10.0}; // model sides angle deviation tolerance (deg)
+  std::vector<float> line_strtPoint_dists = {0.20, 0.33, 0.42, 0.50}; // distance between the 2 lines starting points (meters)
+  // TODO: also implement a test to show how a moving average can affect the results
 
+}; // end of class LidarPclProcessor
 
 
 int main(int argc, char **argv)
@@ -578,7 +532,7 @@ int main(int argc, char **argv)
   auto node = std::make_shared<LidarPclProcessor>();
   rclcpp::spin(node);
 
-  // Shutdown the ROS 2 client library
+  // Shutdown ROS 2 client library
   rclcpp::shutdown();
 
   return 0;
