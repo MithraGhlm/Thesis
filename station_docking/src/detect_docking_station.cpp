@@ -37,6 +37,9 @@
 #define INLIER_NUM 10
 #define ANGLE_DVA  10.0f
 #define START_P_DIST 0.33f
+#define SAMPLE_NUM 10
+#define DISTANCE_THRESHOLD 0.01
+#define MAX_ITERATION 100
 
 class LidarPclProcessor : public rclcpp::Node
 {
@@ -115,8 +118,8 @@ private:
     seg.setOptimizeCoefficients(false);
     seg.setModelType(pcl::SACMODEL_LINE);
     seg.setMethodType(pcl::SAC_RANSAC); //SAC_MLESAC , SAC_RANSAC
-    seg.setDistanceThreshold(0.01); // maximum distance a point can be from the model to be considered an inlier, in meters(?)
-    seg.setMaxIterations(100);
+    seg.setDistanceThreshold(DISTANCE_THRESHOLD); // maximum distance a point can be from the model to be considered an inlier, in meters(?)
+    seg.setMaxIterations(MAX_ITERATION);
     seg.setNumberOfThreads(4);
     //seg.setRadiusLimits(0.001f, 0.5f);
 
@@ -552,7 +555,8 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_2_; // line 2
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_3_; // two lines intersection point
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr intersectPoint_pub_; // intersection point to send to motion control
-};
+  
+}; // end of class LidarPclProcessor
 
 
  // The six coefficients of the line:

@@ -35,16 +35,14 @@
 #define DBG_ANGLE         0
 #define DBG_TARGET        0
 #define DBG_FRAMESCAN     0
-#define INLIER_NUM 10
-#define ANGLE_DVA  10.0f
-#define START_P_DIST 0.33f
 #define SAMPLE_NUM 10
 
 class LidarPclProcessor : public rclcpp::Node
 {
 public:
   LidarPclProcessor()
-  : Node("lidar_pcl_processor")
+  : Node("lidar_pcl_processor"),
+  INLIER_NUM(10), ANGLE_DVA(10.0f), START_P_DIST(0.33f), DISTANCE_THRESHOLD(0.01), MAX_ITERATION(100)
   {
     // Create a subscriber for LaserScan data
     subscription_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -61,6 +59,7 @@ public:
     angles_dbg.open("/ros2_ws/lidar_frames/angles.txt");
     target_dbg.open("/ros2_ws/lidar_frames/targets.txt");
     inlier_dbg.open("/ros2_ws/lidar_frames/inliers.txt");
+    test_file.open("/ros2_ws/lidar_frames/test.txt");
   }
   
   ~LidarPclProcessor() {
@@ -73,14 +72,53 @@ public:
     if (inlier_dbg.is_open()) {
             inlier_dbg.close();
     }
+    if (test_file.is_open()) {
+            test_file.close();
+    }
   }
+
+  //==================================
+  // Setter
+  void setInlierNum(int value){
+    INLIER_NUM = value;
+  }
+  void setAngleDeviation(float value){
+    ANGLE_DVA = value;
+  }
+  void setStartingPointDistance(float value){
+    START_P_DIST = value;
+  }
+  void setDistanceThreshold(float value){
+    DISTANCE_THRESHOLD = value;
+  }
+  void setMaxIteration(int value){
+    MAX_ITERATION = value;
+  }
+  
+  //================================
+  // test process management
+  void resetScanCounter() { scan_num = 0; }
+  void enableTesting(bool enable) { testing_enabled_ = enable; }
+  bool isTestComplete() const { return testing_enabled_ && scan_num >= target_scans_; }
 
 
 private:
-  int scan_num = 1;
+
+  int INLIER_NUM;
+  float ANGLE_DVA;
+  float START_P_DIST;
+  float DISTANCE_THRESHOLD;
+  int MAX_ITERATION;
+
+  int test_num = 0;
+  int scan_num = 0;
+  int corr_detect_scan_num = 0;
+  int target_scans_ = 100; // Num of scans per configuration
+  bool testing_enabled_ = false;
   std::ofstream angles_dbg;
   std::ofstream target_dbg;
   std::ofstream inlier_dbg;
+  std::ofstream test_file;
 
   // variables for SMA
   std::vector<std::pair<float, float>> intersect_points;
@@ -88,6 +126,7 @@ private:
   // Callback function to process LaserScan data
   void scan_cb(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
   {
+    if (!testing_enabled_) return;
     // Converting LaserScan to PointCloud2
     sensor_msgs::msg::PointCloud2 cloud_msg;
     projector_.projectLaser(*scan_msg, cloud_msg);
@@ -115,8 +154,8 @@ private:
     seg.setOptimizeCoefficients(false);
     seg.setModelType(pcl::SACMODEL_LINE);
     seg.setMethodType(pcl::SAC_RANSAC); //SAC_MLESAC , SAC_RANSAC
-    seg.setDistanceThreshold(0.01); // maximum distance a point can be from the model to be considered an inlier
-    seg.setMaxIterations(100);
+    seg.setDistanceThreshold(DISTANCE_THRESHOLD); // maximum distance a point can be from the model to be considered an inlier
+    seg.setMaxIterations(MAX_ITERATION);
     seg.setNumberOfThreads(4);
     //seg.setRadiusLimits(0.001f, 0.5f);
 
@@ -175,6 +214,12 @@ private:
     // publishing PointCloud2 result
     pointcloud2_publisher_->publish(output_cloud);
     scan_num++;
+     if (scan_num >= target_scans_) {
+      // writing to file
+      test_file << MAX_ITERATION << "," << INLIER_NUM << "," << ANGLE_DVA << "," << DISTANCE_THRESHOLD << "," << START_P_DIST << "," << scan_num << "," << corr_detect_scan_num << "\n";
+      test_file.flush();
+      RCLCPP_INFO(this->get_logger(), "Configuration test complete!");
+    }
   } // scan_cb
 
 
@@ -259,9 +304,9 @@ private:
     marker1.scale.z = marker2.scale.z = 0.0;
 
     // Set color
-    marker1.color.r = 0.0;
+    marker1.color.r = 1.0;
     marker1.color.g = 0.0;
-    marker1.color.b = 1.0;
+    marker1.color.b = 0.0;
     marker1.color.a = 1.0;
     marker2.color.r = 0.0;
     marker2.color.g = 1.0;
@@ -365,7 +410,7 @@ private:
 
     // Set color
     marker.color.r = 1.0;
-    marker.color.g = 0.0;
+    marker.color.g = 1.0;
     marker.color.b = 0.0;
     marker.color.a = 1.0;
 
@@ -378,46 +423,59 @@ private:
 
     //=================================
     if(pub2motor) {
-      float Xs = 0.0; float Ys = 0.0; // holding the sums 
-      float x_SMA = 0.0; float y_SMA = 0.0; // holding the means
 
-      // simple moving average (SMA)
-      intersect_points.push_back({ixOut, iyOut});
+      // only accept intersection points which are in a 1.5x1.5 m² circumference
+      bool x_in_range = (ixOut < 1.5 && ixOut > -1.5);
+      bool y_in_range = (iyOut < 1.5 && iyOut > -1.5);
+ 
+      if (x_in_range && y_in_range){
+        std::cout << "(ixOut, iyOut): (" << ixOut << ", " << iyOut << ")" << std::endl;
 
-      for (const auto& point : intersect_points) {
-          std::cout << "(" << point.first << ", " << point.second << ")" << std::endl;
-      }
+#if !DBG_SMA
+        intersectPoint.x = ixOut;
+        intersectPoint.y = iyOut;
+#else
+        float Xs = 0.0; float Ys = 0.0; // holding the sums 
+        float x_SMA = 0.0; float y_SMA = 0.0; // holding the means
 
-      if(intersect_points.size() > SAMPLE_NUM -1){
-        // sum all Xs and all Ys
-        for (const auto& row:intersect_points){
-          Xs += row.first;
-          Ys += row.second;
-        }
-        std::cout << "sum of Xs and Ys: " << Xs << ", " << Ys << std::endl;
+        // simple moving average (SMA)
+        intersect_points.push_back({ixOut, iyOut});
 
-        intersect_points.erase(intersect_points.begin()); // Remove the first element of the vector
+        if(intersect_points.size() > SAMPLE_NUM -1){
+          // for (const auto& point : intersect_points) {
+          //     std::cout << "(" << point.first << ", " << point.second << ")" << std::endl;}
 
-        // print the new shortened vector
-          std::cout << "Vector contents after erasing the first element: ";
-          for (const auto& p : intersect_points) {
-              std::cout << "(" << p.first << ", " << p.second << ") ";
+          // sum all Xs and all Ys
+          for (const auto& row:intersect_points){
+            Xs += row.first;
+            Ys += row.second;
           }
-          std::cout << std::endl;
-          
-        x_SMA = Xs / SAMPLE_NUM;
-        y_SMA = Ys / SAMPLE_NUM;
-        //=================================
+          // std::cout << "sum of Xs and Ys: " << Xs << ", " << Ys << std::endl;
 
-        intersectPoint.x = x_SMA; // ixOut;
-        intersectPoint.y = y_SMA; // iyOut
-        intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
-        // Topic publishing the point for robot to follow
-        intersectPoint_pub_->publish(intersectPoint);
+          // Remove the first element of the vector (FIFO)
+          intersect_points.erase(intersect_points.begin()); 
+            
+          x_SMA = Xs / SAMPLE_NUM;
+          y_SMA = Ys / SAMPLE_NUM;
 
-    #if DBG_TARGET
-        target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
-    #endif
+          intersectPoint.x = x_SMA;
+          intersectPoint.y = y_SMA;
+    //=================================
+
+#endif
+
+          intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
+
+          // Topic publishing the point for robot to follow
+          intersectPoint_pub_->publish(intersectPoint);
+          corr_detect_scan_num ++;
+
+#if DBG_TARGET
+          target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
+#endif
+#if DBG_SMA
+        }
+#endif
       }
     }
   }
@@ -514,23 +572,65 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr intersectPoint_pub_; // intersection point to send to motion control
 
 
-  //=====================================
-  // Testing
-  std::vector<float> dist_thresh = {0.0025, 0.005, 0.01};   // how close points are to the model (meters)
-  std::vector<int> max_iteration = {50, 100, 200, 500, 1000}; // iteration of RANSAC
-  std::vector<int> num_of_inliers = {10, 15, 20, 25}; // min allowed number of inliers in a line
-  std::vector<float> model_angle_deviation = {3.0, 5.0, 10.0}; // model sides angle deviation tolerance (deg)
-  std::vector<float> line_strtPoint_dists = {0.20, 0.33, 0.42, 0.50}; // distance between the 2 lines starting points (meters)
-  // TODO: also implement a test to show how a moving average can affect the results
-
 }; // end of class LidarPclProcessor
 
 
 int main(int argc, char **argv)
 {
+  //=====================================
+  // Testing values
+  std::vector<int> max_iteration = {50, 100, 200, 500}; // iteration of RANSAC
+  std::vector<int> num_of_inliers = {10, 15, 20, 25}; // min allowed number of inliers in a line
+  std::vector<float> model_angle_deviation = {3.0, 5.0, 10.0}; // model sides angle deviation tolerance (deg)
+  std::vector<float> distance_thresh = {0.0025, 0.005, 0.01};   // how close points are to the model (meters)
+  std::vector<float> line_strtPoint_dists = {0.20, 0.33, 0.42, 0.50}; // distance between the 2 lines starting points (meters)
+  //=====================================
+
   rclcpp::init(argc, argv);
   auto node = std::make_shared<LidarPclProcessor>();
-  rclcpp::spin(node);
+
+  //=====================================
+  // Testing loops
+  
+  for (int iterationNum : max_iteration){
+    std::cout << "max_iteration number: " << iterationNum << std::endl;
+    node->setMaxIteration(iterationNum);
+
+    for (int inlierNum : num_of_inliers){
+      std::cout << "number_of_inliers: " << inlierNum << std::endl;
+      node->setInlierNum(inlierNum);
+
+      for (float angleDev : model_angle_deviation){
+        std::cout << "model_angle_deviation: " << angleDev << std::endl;
+        node->setAngleDeviation(angleDev);
+
+        for (float distance : distance_thresh){
+          std::cout << "distance_threshold: " << distance << std::endl;
+          node->setDistanceThreshold(distance);
+
+          for (float points_distance : line_strtPoint_dists){
+            std::cout << "line_startingPoint_distants: " << points_distance << std::endl;
+            node->setStartingPointDistance(points_distance);
+
+            // Preparing the node to start the next test
+            node->resetScanCounter();
+            node->enableTesting(true);
+
+            // Wait until 1000 scans get processed
+            while (!node->isTestComplete()) {
+              rclcpp::spin_some(node);
+              std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+            // Disabling test for this configuration
+            node->enableTesting(false);
+          }
+        }
+      }
+    }
+  }
+  //=====================================
+
+  //rclcpp::spin(node);
 
   // Shutdown ROS 2 client library
   rclcpp::shutdown();
