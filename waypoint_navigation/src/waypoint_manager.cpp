@@ -30,8 +30,10 @@ public:
 
 private:
     void joystick_cb(const sensor_msgs::msg::Joy::SharedPtr msg) {
+        auto now = this->now();
         // Button 0 triggers the waypoint saving (button X)
-        if (msg->buttons[0] == 1) {
+        if (msg->buttons[0] == 1 && (now - last_button_0_press_) > debounce_duration_) {
+            last_button_0_press_ = now;  // Update last press time
             geometry_msgs::msg::PoseStamped current_pose;
             if (getRobotPose(current_pose)) {
                 waypoints_.push_back(current_pose);
@@ -40,9 +42,10 @@ private:
             }
         }
         // Button 3 triggers the start of waypoint following (button Triangle)
-        if (msg->buttons[3] == 1) {
-        RCLCPP_INFO(this->get_logger(), "Starting waypoint navigation...");
-        followWaypoints();
+        if (msg->buttons[3] == 1 && (now - last_button_3_press_) > debounce_duration_) {
+            last_button_3_press_ = now;
+            RCLCPP_INFO(this->get_logger(), "Starting waypoint navigation...");
+            followWaypoints();
         }
     }
 
@@ -137,6 +140,11 @@ private:
     tf2_ros::TransformListener tf_listener_;
 
     std::vector<geometry_msgs::msg::PoseStamped> waypoints_;
+
+    // Debouncing
+    rclcpp::Time last_button_0_press_ {0};  // last press time button 0
+    rclcpp::Time last_button_3_press_ {0};  // last press time button 3
+    rclcpp::Duration debounce_duration_ {std::chrono::milliseconds(500)};  // time tolerance (ms)
 };
 
 int main(int argc, char **argv) {
