@@ -4,19 +4,32 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <vector>
+#include <memory>
 
-class WaypointRecorder : public rclcpp::Node {
+//TODO change the class name WaypointRecorder to WaypointNavigator
+//TODO use NavigateToPose action instead of publishing waypoints on the /goal_pose topic
+
+class WaypointNavigator : public rclcpp::Node {
 public:
-    WaypointRecorder()
+    using NavigateToPose = nav2_msgs::action::NavigateToPose;
+    using GoalHandleNavigateToPose = rclcpp_action::ClientGoalHandle<NavigateToPose>;
+
+    WaypointNavigator()
         : Node("waypoint_recorder"), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
         joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&WaypointRecorder::joystick_cb, this, std::placeholders::_1));
+            "/joy", 10, std::bind(&WaypointNavigator::joystick_cb, this, std::placeholders::_1));
 
+        //TODO Replace the waypoint_pub_ publisher with an rclcpp_action::Client for the NavigateToPose action
         // NAV2 listens to /goal_pose topic for goal commands
-        waypoint_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
+        // waypoint_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
 
-        RCLCPP_INFO(this->get_logger(), "WaypointRecorder node started.");
+        // action client for navigation
+        nav_client_ = rclcpp_action::create_client<NavigateToPose>(this, "navigate_to_pose");
+
+        RCLCPP_INFO(this->get_logger(), "WaypointNavigator node started.");
     }
 
 private:
@@ -34,7 +47,7 @@ private:
         if (msg->buttons[3] == 1) {
         RCLCPP_INFO(this->get_logger(), "Starting waypoint navigation...");
         followWaypoints();
-    }
+        }
     }
 
     bool getRobotPose(geometry_msgs::msg::PoseStamped &pose) {
@@ -57,23 +70,70 @@ private:
         }
     }
 
+    //TODO Update followWaypoints() to send waypoints as goals to the action server and receive feedback about the robot's progress and final status.
     void followWaypoints() {
+        if (!nav_client_->wait_for_action_server(std::chrono::seconds(10))) {
+            RCLCPP_ERROR(this->get_logger(), "Navigation action server not available.");
+            return;
+        }
+
         for (const auto &waypoint : waypoints_) {
             RCLCPP_INFO(this->get_logger(), "Navigating to waypoint at (%.2f, %.2f)", 
                     waypoint.pose.position.x, waypoint.pose.position.y);
 
-            waypoint_pub_->publish(waypoint);
-            // TODO: check for feedback from NAV2 to confirm that the robot has reached the waypoint
-            rclcpp::sleep_for(std::chrono::seconds(5));  // Wait for the robot to reach the waypoint
+        auto goal_msg = NavigateToPose::Goal();
+            goal_msg.pose = waypoint;
+
+            auto send_goal_options = rclcpp_action::Client<NavigateToPose>::SendGoalOptions();
+            send_goal_options.feedback_callback =
+                std::bind(&WaypointNavigator::feedback_cb, this, std::placeholders::_1, std::placeholders::_2);
+            send_goal_options.result_callback =
+                std::bind(&WaypointNavigator::result_cb, this, std::placeholders::_1);
+
+            auto goal_handle_future = nav_client_->async_send_goal(goal_msg, send_goal_options);
+
+            // Wait for the robot to finish navigating to this waypoint
+            rclcpp::spin_until_future_complete(this->get_node_base_interface(), goal_handle_future);
         }
+
+            // waypoint_pub_->publish(waypoint);
+            // // TODO: check for feedback from NAV2 to confirm that the robot has reached the waypoint
+            // rclcpp::sleep_for(std::chrono::seconds(5));  // Wait for the robot to reach the waypoint
+        //}
         RCLCPP_INFO(this->get_logger(), "Finished following all waypoints.");
     }
 
+    void feedback_cb(
+        GoalHandleNavigateToPose::SharedPtr,
+        const std::shared_ptr<const NavigateToPose::Feedback> feedback) {
+        RCLCPP_INFO(this->get_logger(), "Feedback: Robot is at position: [%.2f, %.2f]",
+                    feedback->current_pose.pose.position.x, feedback->current_pose.pose.position.y);
+    }
+
+    void result_cb(const GoalHandleNavigateToPose::WrappedResult &result) {
+        switch (result.code) {
+        case rclcpp_action::ResultCode::SUCCEEDED:
+            RCLCPP_INFO(this->get_logger(), "Successfully reached the waypoint!");
+            break;
+        case rclcpp_action::ResultCode::ABORTED:
+            RCLCPP_ERROR(this->get_logger(), "Waypoint navigation aborted.");
+            break;
+        case rclcpp_action::ResultCode::CANCELED:
+            RCLCPP_WARN(this->get_logger(), "Waypoint navigation canceled.");
+            break;
+        default:
+            RCLCPP_ERROR(this->get_logger(), "Unknown result code.");
+            break;
+        }
+    }
+
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr waypoint_pub_;
+    rclcpp_action::Client<NavigateToPose>::SharedPtr nav_client_;
+    //rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr waypoint_pub_;
 
     /* tf2_ros::Buffer Stores transformations and provides lookup functions to get the current position and orientation of the robot.
-     The tf_buffer_ object keeps a history of recent transforms between different frames. It's used to track the transformation from the map frame to the base_link frame (the robot's position).
+     The tf_buffer_ object keeps a history of recent transforms between different frames. It's used to track the transformation from the map frame to
+     the base_link frame (the robot's position).
      Initializing tf_buffer_ with get_clock() allows it to sync with the ROS2 system clock for accurate timing of transformations.
      tf_buffer_ Stores and provides access to frame transformations.
     */
@@ -89,7 +149,7 @@ private:
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<WaypointRecorder>();
+    auto node = std::make_shared<WaypointNavigator>();
 
     rclcpp::spin(node);
     rclcpp::shutdown();

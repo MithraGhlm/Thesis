@@ -14,6 +14,8 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(nav2_msgs REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -29,6 +31,8 @@ ament_target_dependencies(follow_waypoints
   tf2_ros
   tf2_geometry_msgs
   geometry_msgs
+  rclcpp_action
+  nav2_msgs
   )
 
 
