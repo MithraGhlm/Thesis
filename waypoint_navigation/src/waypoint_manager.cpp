@@ -9,8 +9,8 @@
 #include <vector>
 #include <memory>
 
-//TODO change the class name WaypointRecorder to WaypointNavigator
-//TODO use NavigateToPose action instead of publishing waypoints on the /goal_pose topic
+
+
 
 class WaypointNavigator : public rclcpp::Node {
 public:
@@ -21,10 +21,6 @@ public:
         : Node("waypoint_recorder"), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
         joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&WaypointNavigator::joystick_cb, this, std::placeholders::_1));
-
-        //TODO Replace the waypoint_pub_ publisher with an rclcpp_action::Client for the NavigateToPose action
-        // NAV2 listens to /goal_pose topic for goal commands
-        // waypoint_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
 
         // action client for navigation
         nav_client_ = rclcpp_action::create_client<NavigateToPose>(this, "navigate_to_pose");
@@ -70,7 +66,7 @@ private:
         }
     }
 
-    //TODO Update followWaypoints() to send waypoints as goals to the action server and receive feedback about the robot's progress and final status.
+    // Updating followWaypoints() to send waypoints as goals to the action server and receive feedback about the robot's progress and final status
     void followWaypoints() {
         if (!nav_client_->wait_for_action_server(std::chrono::seconds(10))) {
             RCLCPP_ERROR(this->get_logger(), "Navigation action server not available.");
@@ -96,10 +92,7 @@ private:
             rclcpp::spin_until_future_complete(this->get_node_base_interface(), goal_handle_future);
         }
 
-            // waypoint_pub_->publish(waypoint);
-            // // TODO: check for feedback from NAV2 to confirm that the robot has reached the waypoint
-            // rclcpp::sleep_for(std::chrono::seconds(5));  // Wait for the robot to reach the waypoint
-        //}
+
         RCLCPP_INFO(this->get_logger(), "Finished following all waypoints.");
     }
 
@@ -129,7 +122,6 @@ private:
 
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
     rclcpp_action::Client<NavigateToPose>::SharedPtr nav_client_;
-    //rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr waypoint_pub_;
 
     /* tf2_ros::Buffer Stores transformations and provides lookup functions to get the current position and orientation of the robot.
      The tf_buffer_ object keeps a history of recent transforms between different frames. It's used to track the transformation from the map frame to
