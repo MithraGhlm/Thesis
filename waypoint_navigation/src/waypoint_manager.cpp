@@ -142,8 +142,8 @@ private:
     std::vector<geometry_msgs::msg::PoseStamped> waypoints_;
 
     // Debouncing
-    rclcpp::Time last_button_0_press_ {0};  // last press time button 0
-    rclcpp::Time last_button_3_press_ {0};  // last press time button 3
+    rclcpp::Time last_button_0_press_ {this->now()};  // last press time button 0
+    rclcpp::Time last_button_3_press_ {this->now()};  // last press time button 3
     rclcpp::Duration debounce_duration_ {std::chrono::milliseconds(500)};  // time tolerance (ms)
 };
 
