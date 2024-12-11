@@ -186,13 +186,16 @@ RCLCPP_INFO(
 hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // convert rad/s to RPM
-  double coeff = 60/(2*M_PI);
+  // convert rad/s to RPM 
+  // motors need to turn in opposite directions, hence having two coeffs
+  double coeff_l = -60/(2*M_PI);
+  double coeff_r = 60/(2*M_PI);
 
-  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff, comms_.wheel_r_->cmd*coeff);
+
+  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff_l, comms_.wheel_r_->cmd*coeff_r);
   
-  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff));
-  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff));
+  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff_l));
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff_r));
 
   return hardware_interface::return_type::OK;
 }
