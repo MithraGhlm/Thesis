@@ -161,14 +161,14 @@ std::vector<hardware_interface::CommandInterface> DiffDriveCanOpenHardware::expo
 }
 
 
-// TODO: read from wheels their pos and vel and put in the vector state_interfaces
+// read from wheels their pos and vel and put in the vector state_interfaces
 hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   // convert tenths of degree to rad 
 
-  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800);
-  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2*M_PI)/60;
+  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800)*(-1);
+  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2*M_PI)/60*(-1);
 
   comms_.wheel_r_->pos = comms_.wheel_r_->get_PositionActualValue()*(M_PI/1800);
   comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue()*(2*M_PI)/60;
