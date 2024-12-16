@@ -165,13 +165,15 @@ std::vector<hardware_interface::CommandInterface> DiffDriveCanOpenHardware::expo
 hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
+  float wheel_radius = 15.0f;
+
   // convert tenths of degree to rad 
 
-  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800)*(-1);
-  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2*M_PI)/60*(-1);
+  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800.0f)*(-1.0f)/wheel_radius;
+  comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2.0f*M_PI)/60.0f*(-1.0f);
 
-  comms_.wheel_r_->pos = comms_.wheel_r_->get_PositionActualValue()*(M_PI/1800);
-  comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue()*(2*M_PI)/60;
+  comms_.wheel_r_->pos = comms_.wheel_r_->get_PositionActualValue()*(M_PI/1800.0f)/wheel_radius;
+  comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue()*(2.0f*M_PI)/60.0f;
 
 RCLCPP_INFO(
   rclcpp::get_logger("DiffDriveCanOpenHardware"),
@@ -186,16 +188,18 @@ RCLCPP_INFO(
 hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // convert rad/s to RPM 
+  // convert rad/s to RPM(Revolution per Minute)
   // motors need to turn in opposite directions, hence having two coeffs
-  double coeff_l = -60/(2*M_PI);
-  double coeff_r = 60/(2*M_PI);
+  double coeff_l = -60.0f/(2.0f*M_PI);
+  double coeff_r = 60.0f/(2.0f*M_PI);
+
+  float wheel_gear_ratio = 16.0f;
 
 
-  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff_l, comms_.wheel_r_->cmd*coeff_r);
+  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff_l*wheel_gear_ratio, comms_.wheel_r_->cmd*coeff_r*wheel_gear_ratio);
   
-  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff_l));
-  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff_r));
+  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff_l*wheel_gear_ratio));
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff_r*wheel_gear_ratio));
 
   return hardware_interface::return_type::OK;
 }

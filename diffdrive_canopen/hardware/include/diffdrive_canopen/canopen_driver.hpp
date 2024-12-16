@@ -58,9 +58,10 @@ public:
     };
 
     std::string name = "";
-    double cmd = 0;
-    double pos = 0;
-    double vel = 0;
+    double cmd = 0.0;
+    double pos = 0.0;
+    double vel = 0.0;
+    float wheel_radius = 15.0f;
 
     void set_name(const std::string &wheel_name)
     {

@@ -403,9 +403,9 @@ private:
     marker.type = visualization_msgs::msg::Marker::SPHERE;
     marker.action = action;
 
-    marker.scale.x = 0.08; 
-    marker.scale.y = 0.08; 
-    marker.scale.z = 0.08;
+    marker.scale.x = 0.1; 
+    marker.scale.y = 0.1; 
+    marker.scale.z = 0.1;
 
     // Set color
     marker.color.r = 1.0;
