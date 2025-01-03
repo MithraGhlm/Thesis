@@ -71,7 +71,7 @@ target_link_libraries(obstacles ${GAZEBO_LIBRARIES})
 # Install
 ################################################################################
 
-install(DIRECTORY descriptions launch models rviz urdf worlds config
+install(DIRECTORY descriptions launch models rviz worlds config
   DESTINATION share/${PROJECT_NAME}/
 )
 
