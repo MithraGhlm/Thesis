@@ -55,14 +55,8 @@ set(dependencies
   "rclcpp"
   "sensor_msgs"
   "tf2"
-  # "canopen"
-  # "lely_core_libraries"
 )
 
-set(EXEC_NAME "turtlebot3_drive")
-
-add_executable(${EXEC_NAME} src/turtlebot3_drive.cpp)
-ament_target_dependencies(${EXEC_NAME} ${dependencies})
 
 add_library(obstacle1 SHARED models/turtlebot3_dqn_world/obstacle_plugin/obstacle1.cc)
 target_link_libraries(obstacle1 ${GAZEBO_LIBRARIES})
@@ -76,18 +70,10 @@ target_link_libraries(obstacles ${GAZEBO_LIBRARIES})
 ################################################################################
 # Install
 ################################################################################
-install(TARGETS ${EXEC_NAME}
-  DESTINATION lib/${PROJECT_NAME}
-)
 
 install(DIRECTORY descriptions launch models rviz urdf worlds config
   DESTINATION share/${PROJECT_NAME}/
 )
-
-install(DIRECTORY include/
-  DESTINATION include/
-)
-
 
 ################################################################################
 # Macro for ament package
