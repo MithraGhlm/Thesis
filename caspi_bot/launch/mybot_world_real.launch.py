@@ -4,19 +4,21 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessStart
 
 
 def generate_launch_description():
-    package_name = 'turtlebot3_gazebo' 
+    package_name = 'caspi_bot' 
     launch_file_dir = os.path.join(get_package_share_directory(package_name), 'launch')
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
     my_package_dir = get_package_share_directory(package_name)
 
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     use_ros2_control = LaunchConfiguration('use_ros2_control', default='true')
     x_pose = LaunchConfiguration('x_pose', default='-8.5')
     y_pose = LaunchConfiguration('y_pose', default='2.0')
@@ -28,21 +30,6 @@ def generate_launch_description():
         'room_with_objects_2.world'
     )
 
-    gzserver_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
-        ),
-        launch_arguments={'world': world}.items()
-    )
-
-
-    gazebo_params_file = os.path.join(get_package_share_directory(package_name),'config','gazebo_params.yaml')
-    gzclient_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gzclient.launch.py')
-        ) ,
-        launch_arguments={'extra_gazebo_args': '--ros-args --params-file ' + gazebo_params_file}.items()
-    )
 
     ## robot state publisher launch file
     robot_state_publisher_cmd = IncludeLaunchDescription(
@@ -51,18 +38,7 @@ def generate_launch_description():
         ),
         launch_arguments={'use_sim_time': use_sim_time, 'use_ros2_control':use_ros2_control}.items()
     )
-
-
-    ## launch file to spawn Ur own robot
-    spawn_mybot_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(launch_file_dir, 'spawn_mybot.launch.py')
-        ),
-        launch_arguments={
-            'x_pose': x_pose,
-            'y_pose': y_pose
-        }.items()
-    )
+    
 
     if use_sim_time == 'true':
         _use_sim_time = f"use_sim_time:={True}"
@@ -79,9 +55,26 @@ def generate_launch_description():
     twist_mux = Node(
             package="twist_mux",
             executable="twist_mux",
-            parameters=[twist_mux_params, {'use_sim_time': True}],
+            parameters=[twist_mux_params, {'use_sim_time': False}],
             remappings=[('/cmd_vel_out','/diff_cont/cmd_vel_unstamped')]
         )
+
+
+
+    # ask the robot_state_publisher node to return robot_description parameter as a string
+    robot_description = Command(['ros2 param get --hide-type /robot_state_publisher robot_description'])
+
+    controller_params_file = os.path.join(get_package_share_directory(package_name),'config','my_controllers.yaml')
+
+    # launch ros2_controll_node, set its robot_description parameter, and take other parameters specified in the yaml file.
+    controller_manager = Node(
+    package="controller_manager",
+    executable="ros2_control_node",
+    parameters=[{'robot_description': robot_description},
+                    controller_params_file]
+    )
+
+    delayed_controller_manager = TimerAction(period=3.0, actions=[controller_manager])
 
 
     diff_drive_spawner = Node(
@@ -90,23 +83,37 @@ def generate_launch_description():
     arguments=["diff_cont"],
     )
 
+    delayed_diff_drive_spawner = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=controller_manager,
+            on_start=[diff_drive_spawner],
+        )
+    )
+
     joint_broad_spawner = Node(
     package="controller_manager",
     executable="spawner",
     arguments=["joint_broad"],
     )
 
+    delayed_joint_broad_spawner = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=controller_manager,
+            on_start=[joint_broad_spawner],
+        )
+    )
+
+
     ld = LaunchDescription()
 
     # Add the commands to the launch description
-    ld.add_action(gzserver_cmd)
-    ld.add_action(gzclient_cmd)
     ld.add_action(robot_state_publisher_cmd)
-    ld.add_action(spawn_mybot_cmd)
-    # -------
     ld.add_action(rviz_laucher)
     ld.add_action(twist_mux)
-    ld.add_action(diff_drive_spawner)
-    ld.add_action(joint_broad_spawner)
+    ld.add_action(delayed_controller_manager)
+    ld.add_action(delayed_diff_drive_spawner)
+    ld.add_action(delayed_joint_broad_spawner)
+    #ld.add_action(diff_drive_spawner)
+    #ld.add_action(joint_broad_spawner)
 
     return ld

@@ -3250,8 +3250,8 @@
       </link>
       <static>0</static>
       <plugin name='gazebo_ros2_control' filename='libgazebo_ros2_control.so'>
-        <parameters>/ros2_ws/install/turtlebot3_gazebo/share/turtlebot3_gazebo/config/my_controllers.yaml</parameters>
-        <parameters>/ros2_ws/install/turtlebot3_gazebo/share/turtlebot3_gazebo/config/gaz_ros2_ctl_use_sim.yaml</parameters>
+        <parameters>/ros2_ws/install/caspi_bot/share/caspi_bot/config/my_controllers.yaml</parameters>
+        <parameters>/ros2_ws/install/caspi_bot/share/caspi_bot/config/gaz_ros2_ctl_use_sim.yaml</parameters>
       </plugin>
       <pose>-8.5 2 0.01 0 -0 0</pose>
     </model>

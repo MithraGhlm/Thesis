@@ -15,7 +15,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
 
     # Get the xacro file path
-    pkg_path = os.path.join(get_package_share_directory('turtlebot3_gazebo'))
+    pkg_path = os.path.join(get_package_share_directory('caspi_bot'))
     xacro_file = os.path.join(pkg_path,'descriptions','robot.urdf.xacro')
 
     # Command to process the xacro file and convert it to urdf

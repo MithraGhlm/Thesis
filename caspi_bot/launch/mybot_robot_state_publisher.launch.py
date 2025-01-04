@@ -17,7 +17,7 @@ def generate_launch_description():
 
     # Get the xacro file path
     xacro_file_name = 'robot.urdf.xacro'
-    pkg_path = os.path.join(get_package_share_directory('turtlebot3_gazebo'))
+    pkg_path = os.path.join(get_package_share_directory('caspi_bot'))
     xacro_file = os.path.join(pkg_path, 'descriptions', xacro_file_name)
 
     # # Command to process the xacro file and convert it to urdf
