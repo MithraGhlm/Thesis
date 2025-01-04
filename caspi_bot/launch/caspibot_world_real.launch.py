@@ -34,7 +34,7 @@ def generate_launch_description():
     ## robot state publisher launch file
     robot_state_publisher_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(launch_file_dir, 'mybot_robot_state_publisher.launch.py')
+            os.path.join(launch_file_dir, 'caspibot_robot_state_publisher.launch.py')
         ),
         launch_arguments={'use_sim_time': use_sim_time, 'use_ros2_control':use_ros2_control}.items()
     )

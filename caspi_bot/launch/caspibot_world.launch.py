@@ -47,16 +47,16 @@ def generate_launch_description():
     ## robot state publisher launch file
     robot_state_publisher_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(launch_file_dir, 'mybot_robot_state_publisher.launch.py')
+            os.path.join(launch_file_dir, 'caspibot_robot_state_publisher.launch.py')
         ),
         launch_arguments={'use_sim_time': use_sim_time, 'use_ros2_control':use_ros2_control}.items()
     )
 
 
     ## launch file to spawn Ur own robot
-    spawn_mybot_cmd = IncludeLaunchDescription(
+    spawn_caspibot_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(launch_file_dir, 'spawn_mybot.launch.py')
+            os.path.join(launch_file_dir, 'spawn_caspibot.launch.py')
         ),
         launch_arguments={
             'x_pose': x_pose,
@@ -102,7 +102,7 @@ def generate_launch_description():
     ld.add_action(gzserver_cmd)
     ld.add_action(gzclient_cmd)
     ld.add_action(robot_state_publisher_cmd)
-    ld.add_action(spawn_mybot_cmd)
+    ld.add_action(spawn_caspibot_cmd)
     # -------
     ld.add_action(rviz_laucher)
     ld.add_action(twist_mux)

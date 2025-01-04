@@ -2636,7 +2636,7 @@
           <wrench>0 0 -0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='mybot'>
+      <model name='caspibot'>
         <pose>-8.5 2 0.15 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='base_link'>
@@ -2797,7 +2797,7 @@
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
-    <model name='mybot'>
+    <model name='caspibot'>
       <link name='base_link'>
         <inertial>
           <pose>-0.099 0 0.0305 0 -0 0</pose>

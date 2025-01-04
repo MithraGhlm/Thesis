@@ -13,7 +13,7 @@ from launch_ros.actions import Node
 ## TODO add the urdf of Ur robot here
 def generate_launch_description():
     # Get the urdf file
-    model_folder = 'mybot'
+    model_folder = 'caspibot'
     urdf_path = os.path.join(
         get_package_share_directory('caspi_bot'),
         'models',
@@ -39,7 +39,7 @@ def generate_launch_description():
         package='gazebo_ros',
         executable='spawn_entity.py',
         arguments=[
-            '-entity', 'mybot',
+            '-entity', 'caspibot',
             '-file', urdf_path,
             '-x', x_pose,
             '-y', y_pose,

@@ -23,7 +23,7 @@ def generate_launch_description():
             executable='teleop_node',
             name='teleop_node',
             parameters=[joy_params, {'use_sim_time': use_sim_time}],
-            remappings=[('/cmd_vel','/cmd_vel_joy')] # cmd_vel_joy will be later remapped to /diff_cont/cmd_vel_unstamped by twist_mux in mybot_world_real.launch.py
+            remappings=[('/cmd_vel','/cmd_vel_joy')] # cmd_vel_joy will be later remapped to /diff_cont/cmd_vel_unstamped by twist_mux in caspibot_world_real.launch.py
          )
 
     # twist_stamper = Node(
