@@ -42,7 +42,7 @@ class LidarPclProcessor : public rclcpp::Node
 public:
   LidarPclProcessor()
   : Node("lidar_pcl_processor"),
-  INLIER_NUM(10), ANGLE_DVA(10.0f), START_P_DIST(0.33f), DISTANCE_THRESHOLD(0.01), MAX_ITERATION(100)
+  INLIER_NUM(10), ANGLE_DVA(10.0f), START_P_DIST(0.45f), DISTANCE_THRESHOLD(0.01), MAX_ITERATION(100)
   {
     // Create a subscriber for LaserScan data
     subscription_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -581,9 +581,9 @@ int main(int argc, char **argv)
   // Testing values
   std::vector<int> max_iteration = {50, 100, 200, 500}; // iteration of RANSAC
   std::vector<int> num_of_inliers = {10, 15, 20, 25}; // min allowed number of inliers in a line
-  std::vector<float> model_angle_deviation = {3.0, 5.0, 10.0}; // model sides angle deviation tolerance (deg)
+  std::vector<float> model_angle_deviation = {3.0, 5.0, 7.0}; // model sides angle deviation tolerance (deg)
   std::vector<float> distance_thresh = {0.0025, 0.005, 0.01};   // how close points are to the model (meters)
-  std::vector<float> line_strtPoint_dists = {0.20, 0.33, 0.42, 0.50}; // distance between the 2 lines starting points (meters)
+  //std::vector<float> line_strtPoint_dists = {0.20, 0.33, 0.42, 0.50}; // distance between the 2 lines starting points (meters)
   //=====================================
 
   rclcpp::init(argc, argv);

@@ -30,7 +30,8 @@ slam_toolbox:
     transform_publish_period: 0.02 #if 0 never publishes odometry
     map_update_interval: 5.0
     resolution: 0.05
-    max_laser_range: 12.0 #for rastering images
+    min_laser_range: 0.06 #for rastering images (meters)
+    max_laser_range: 4.0 #for rastering images (meters)
     minimum_time_interval: 0.5
     transform_timeout: 0.2
     tf_buffer_duration: 30.
@@ -58,9 +59,9 @@ slam_toolbox:
     correlation_search_space_resolution: 0.01
     correlation_search_space_smear_deviation: 0.1 
 
-    # Correlation Parameters - Loop Closure Parameters
-    loop_search_space_dimension: 8.0
-    loop_search_space_resolution: 0.05
+    # Correlation Parameters - Loop Closure Parameters (meters)
+    loop_search_space_dimension: 8.0 # searches for matches within an 8-meter radius of the robot's current estimated position to close a loop.
+    loop_search_space_resolution: 0.05 # resolution of the grid used in the search space for loop closure (5 cm)
     loop_search_space_smear_deviation: 0.03
 
     # Scan Matcher Parameters
