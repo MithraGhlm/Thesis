@@ -94,6 +94,10 @@ public:
   void setMaxIteration(int value){
     MAX_ITERATION = value;
   }
+
+  void setCorrDetectScanNum(int value){
+    corr_detect_scan_num = value;
+  }
   
   //================================
   // test process management
@@ -468,7 +472,10 @@ private:
 
           // Topic publishing the point for robot to follow
           intersectPoint_pub_->publish(intersectPoint);
-          corr_detect_scan_num ++;
+          if (intersectPoint.x<1.5f && intersectPoint.x>1.4){
+            corr_detect_scan_num ++;
+          }
+          
 
 #if DBG_TARGET
           target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
@@ -608,22 +615,23 @@ int main(int argc, char **argv)
           std::cout << "distance_threshold: " << distance << std::endl;
           node->setDistanceThreshold(distance);
 
-          for (float points_distance : line_strtPoint_dists){
-            std::cout << "line_startingPoint_distants: " << points_distance << std::endl;
-            node->setStartingPointDistance(points_distance);
+          //for (float points_distance : line_strtPoint_dists){
+          std::cout << "line_startingPoint_distants: " << points_distance << std::endl;
+          node->setStartingPointDistance(points_distance);
 
-            // Preparing the node to start the next test
-            node->resetScanCounter();
-            node->enableTesting(true);
+          // Preparing the node to start the next test
+          node->resetScanCounter();
+          node->enableTesting(true);
 
-            // Wait until 1000 scans get processed
-            while (!node->isTestComplete()) {
-              rclcpp::spin_some(node);
-              std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-            // Disabling test for this configuration
-            node->enableTesting(false);
+          // Wait until 100 scans get processed
+          while (!node->isTestComplete()) {
+            rclcpp::spin_some(node);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
           }
+          // Disabling test for this configuration
+          node->enableTesting(false);
+          node->setCorrDetectScanNum(0);
+          //}
         }
       }
     }
