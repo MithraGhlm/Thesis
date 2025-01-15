@@ -35,7 +35,12 @@
 #define DBG_ANGLE         0
 #define DBG_TARGET        0
 #define DBG_FRAMESCAN     0
-#define SAMPLE_NUM 10
+#define SAMPLE_NUM        10
+
+#define DS_DIS            2.36f
+#define DS_DIS_MIN        (DS_DIS-0.05f)
+#define DS_DIS_MAX        (DS_DIS+0.05f)
+
 
 class LidarPclProcessor : public rclcpp::Node
 {
@@ -97,6 +102,7 @@ public:
 
   void setCorrDetectScanNum(int value){
     corr_detect_scan_num = value;
+    previous_scan = value;
   }
   
   //================================
@@ -104,7 +110,7 @@ public:
   void resetScanCounter() { scan_num = 0; }
   void enableTesting(bool enable) { testing_enabled_ = enable; }
   bool isTestComplete() const { return testing_enabled_ && scan_num >= target_scans_; }
-
+  std::ofstream test_file;
 
 private:
 
@@ -117,12 +123,12 @@ private:
   int test_num = 0;
   int scan_num = 0;
   int corr_detect_scan_num = 0;
+  int previous_scan = 0;
   int target_scans_ = 100; // Num of scans per configuration
   bool testing_enabled_ = false;
   std::ofstream angles_dbg;
   std::ofstream target_dbg;
   std::ofstream inlier_dbg;
-  std::ofstream test_file;
 
   // variables for SMA
   std::vector<std::pair<float, float>> intersect_points;
@@ -131,6 +137,7 @@ private:
   void scan_cb(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
   {
     if (!testing_enabled_) return;
+    previous_scan = 1;
     // Converting LaserScan to PointCloud2
     sensor_msgs::msg::PointCloud2 cloud_msg;
     projector_.projectLaser(*scan_msg, cloud_msg);
@@ -429,8 +436,8 @@ private:
     if(pub2motor) {
 
       // only accept intersection points which are in a 1.5x1.5 m² circumference
-      bool x_in_range = (ixOut < 1.5 && ixOut > -1.5);
-      bool y_in_range = (iyOut < 1.5 && iyOut > -1.5);
+      bool x_in_range = (ixOut < DS_DIS+0.2f && ixOut > -(DS_DIS+0.2f));
+      bool y_in_range = (iyOut < DS_DIS+0.2f && iyOut > -(DS_DIS+0.2f));
  
       if (x_in_range && y_in_range){
         std::cout << "(ixOut, iyOut): (" << ixOut << ", " << iyOut << ")" << std::endl;
@@ -472,8 +479,13 @@ private:
 
           // Topic publishing the point for robot to follow
           intersectPoint_pub_->publish(intersectPoint);
-          if (intersectPoint.x<1.5f && intersectPoint.x>1.4){
-            corr_detect_scan_num ++;
+
+          if (intersectPoint.x<DS_DIS_MAX && intersectPoint.x>DS_DIS_MIN){
+            if (previous_scan){
+              corr_detect_scan_num ++;
+              std::cout << intersectPoint.x << " , " << corr_detect_scan_num << " , " << scan_num << std::endl;
+              previous_scan = 0;
+            }
           }
           
 
@@ -596,6 +608,8 @@ int main(int argc, char **argv)
   rclcpp::init(argc, argv);
   auto node = std::make_shared<LidarPclProcessor>();
 
+  node->test_file << "MAX_ITERATION" << "," << "INLIER_NUM" << "," << "ANGLE_DVA" << "," << "DISTANCE_THRESHOLD" << "," << "START_P_DIST" << "," << "SCAN_NUM" << "," << "CORR_DETECT_SCAN_NUM" << "\n";
+
   //=====================================
   // Testing loops
   
@@ -616,8 +630,8 @@ int main(int argc, char **argv)
           node->setDistanceThreshold(distance);
 
           //for (float points_distance : line_strtPoint_dists){
-          std::cout << "line_startingPoint_distants: " << points_distance << std::endl;
-          node->setStartingPointDistance(points_distance);
+          //std::cout << "line_startingPoint_distants: " << points_distance << std::endl;
+          //node->setStartingPointDistance(points_distance);
 
           // Preparing the node to start the next test
           node->resetScanCounter();
