@@ -169,10 +169,10 @@ hardware_interface::return_type DiffDriveCanOpenHardware::read(
 
   // convert tenths of degree to rad 
 
-  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800.0f)*(-1.0f)/wheel_radius;
+  comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800.0f)*(-1.0f)/comms_.wheel_l_->wheel_gear_ratio;
   comms_.wheel_l_->vel = comms_.wheel_l_->get_VelocityActualValue()*(2.0f*M_PI)/60.0f*(-1.0f);
 
-  comms_.wheel_r_->pos = comms_.wheel_r_->get_PositionActualValue()*(M_PI/1800.0f)/wheel_radius;
+  comms_.wheel_r_->pos = comms_.wheel_r_->get_PositionActualValue()*(M_PI/1800.0f)/comms_.wheel_r_->wheel_gear_ratio;
   comms_.wheel_r_->vel = comms_.wheel_r_->get_VelocityActualValue()*(2.0f*M_PI)/60.0f;
 
 RCLCPP_INFO(
@@ -193,13 +193,12 @@ hardware_interface::return_type diffdrive_canopen ::DiffDriveCanOpenHardware::wr
   double coeff_l = -60.0f/(2.0f*M_PI);
   double coeff_r = 60.0f/(2.0f*M_PI);
 
-  float wheel_gear_ratio = 16.0f;
 
-
-  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff_l*wheel_gear_ratio, comms_.wheel_r_->cmd*coeff_r*wheel_gear_ratio);
+  RCLCPP_INFO(rclcpp::get_logger("The commanded velocity is:"), "%f , %f\n", comms_.wheel_l_->cmd*coeff_l*comms_.wheel_l_->wheel_gear_ratio, comms_.wheel_r_->cmd*coeff_r*comms_.wheel_r_->wheel_gear_ratio);
   
-  comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff_l*wheel_gear_ratio));
-  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff_r*wheel_gear_ratio));
+  //comms_.wheel_l_->AsyncWrite<int16_t>(0x6042, 0, (comms_.wheel_l_->cmd*coeff_l*comms_.wheel_l_->wheel_gear_ratio));
+  comms_.wheel_l_->set_TargetVelocity((comms_.wheel_l_->cmd*coeff_l*comms_.wheel_l_->wheel_gear_ratio));
+  comms_.wheel_r_->set_TargetVelocity((comms_.wheel_r_->cmd*coeff_r*comms_.wheel_r_->wheel_gear_ratio));
 
   return hardware_interface::return_type::OK;
 }

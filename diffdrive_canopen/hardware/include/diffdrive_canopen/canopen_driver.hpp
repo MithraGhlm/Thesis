@@ -61,7 +61,7 @@ public:
     double cmd = 0.0;
     double pos = 0.0;
     double vel = 0.0;
-    float wheel_radius = 15.0f;
+    float wheel_gear_ratio = 16.0f;
 
     void set_name(const std::string &wheel_name)
     {
