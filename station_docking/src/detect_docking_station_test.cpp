@@ -436,7 +436,7 @@ private:
     if(pub2motor) {
 
       // only accept intersection points which are in a 1.5x1.5 m² circumference
-      bool x_in_range = (ixOut < DS_DIS+0.2f && ixOut > -(DS_DIS+0.2f));
+      bool x_in_range = (ixOut < DS_DIS+0.2f && ixOut > (DS_DIS-0.2f));
       bool y_in_range = (iyOut < DS_DIS+0.2f && iyOut > -(DS_DIS+0.2f));
  
       if (x_in_range && y_in_range){

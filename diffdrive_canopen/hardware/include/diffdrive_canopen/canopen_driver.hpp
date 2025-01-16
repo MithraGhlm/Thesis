@@ -209,7 +209,7 @@ public:
         ctrl = new io::CanController("can0"); // TODO: change harcoded interface name
         chan = new io::CanChannel(*poll, *exec);
         chan->open(*ctrl);
-        // TODO: change harcoded address
+        // TODO: change harcoded address to dynamic
         master_ = std::make_shared<canopen::AsyncMaster>(*timer, *chan, "/ros2_ws/install/diffdrive_canopen/include/diffdrive_canopen/diffdrive_canopen/master.dcf", "", 1);
         master_->Reset();
         wheel_l_ = std::make_shared<PD4Motor>(*master_, 2);

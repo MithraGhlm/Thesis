@@ -40,6 +40,7 @@
 #define SAMPLE_NUM 10
 #define DISTANCE_THRESHOLD 0.01
 #define MAX_ITERATION 100
+#define DS_DIS            2.0f
 
 class LidarPclProcessor : public rclcpp::Node
 {
@@ -423,13 +424,21 @@ private:
 
     // Topic publishing the point for robot to follow
     if(pub2motor) {
-      intersectPoint.x = ixOut;
-      intersectPoint.y = iyOut;
-      intersectPoint.z = 0.0;  // <<====== Should it be zero or sth else?
-      intersectPoint_pub_->publish(intersectPoint);
+      // only accept intersection points which are in a 2x2 m² circumference
+      //TODO: change it to radius
+      bool x_in_range = (ixOut < DS_DIS);
+
+       if (x_in_range){
+        std::cout << "(ixOut, iyOut): (" << ixOut << ", " << iyOut << ")" << std::endl;
+        
+        intersectPoint.x = ixOut;
+        intersectPoint.y = iyOut;
+        intersectPoint.z = 0.0;
+        intersectPoint_pub_->publish(intersectPoint);
 #if DBG_TARGET
       target_dbg << scan_num << "," << ixOut << "," << iyOut << "\n";
 #endif
+      }
     }
   }
 
@@ -534,9 +543,7 @@ private:
     marker.points.push_back(p_start); marker.points.push_back(p_end);
 
     // setting threshold for the minimum number of inliers in a line
-    // if(inliers->indices.size() > 40){
      marker_pub_->publish(marker);
-    // }
     
     //std::cout << "number of inliers: " << inliers->indices.size() << std::endl;
   }
