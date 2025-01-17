@@ -46,7 +46,7 @@
                 <box size="0.82 0.65 0.23" />
             </geometry>
         </collision>
-        <xacro:inertial_box mass="0.5" x="0.3" y="0.3" z="0.15">
+        <xacro:inertial_box mass="15.0" x="0.3" y="0.3" z="0.15">
             <origin xyz="0.15 0 0.075" rpy="0 0 0" />
         </xacro:inertial_box>
     </link>
@@ -76,7 +76,7 @@
                 <sphere radius="0.074" />
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" length="0.045" radius="0.074">
+        <xacro:inertial_cylinder mass="2.0" length="0.045" radius="0.074">
             <origin xyz="0 0 0" rpy="0 0 0" />
         </xacro:inertial_cylinder>
     </link>
@@ -106,7 +106,7 @@
                 <sphere radius="0.074" />
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" length="0.045" radius="0.074">
+        <xacro:inertial_cylinder mass="2.0" length="0.045" radius="0.074">
             <origin xyz="0 0 0" rpy="0 0 0" />
         </xacro:inertial_cylinder>
     </link>
@@ -136,7 +136,7 @@
                 <sphere radius="0.075" />
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" length="0.045" radius="0.075">
+        <xacro:inertial_cylinder mass="1.0" length="0.045" radius="0.075">
             <origin xyz="0 0 0" rpy="0 0 0" />
         </xacro:inertial_cylinder>
     </link>
@@ -169,7 +169,7 @@
                 <sphere radius="0.075" />
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" length="0.045" radius="0.075">
+        <xacro:inertial_cylinder mass="1.0" length="0.045" radius="0.075">
             <origin xyz="0 0 0" rpy="0 0 0" />
         </xacro:inertial_cylinder>
     </link>
@@ -202,7 +202,7 @@
                 <sphere radius="0.075" />
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" length="0.045" radius="0.075">
+        <xacro:inertial_cylinder mass="1.0" length="0.045" radius="0.075">
             <origin xyz="0 0 0" rpy="0 0 0" />
         </xacro:inertial_cylinder>
     </link>
@@ -235,7 +235,7 @@
                 <sphere radius="0.075" />
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" length="0.045" radius="0.075">
+        <xacro:inertial_cylinder mass="1.0" length="0.045" radius="0.075">
             <origin xyz="0 0 0" rpy="0 0 0" />
         </xacro:inertial_cylinder>
     </link>

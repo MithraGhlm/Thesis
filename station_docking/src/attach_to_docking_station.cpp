@@ -21,8 +21,8 @@ public:
         rcv_timeout_secs_ = this->declare_parameter("rcv_timeout_secs", 1.0);
         angular_chase_multiplier_ = this->declare_parameter("angular_chase_multiplier", 0.7);
         forward_chase_speed_ = this->declare_parameter("forward_chase_speed", 0.2);
-        search_angular_speed_ = this->declare_parameter("search_angular_speed", 0.0);
-        max_size_thresh_ = this->declare_parameter("max_size_thresh", 0.4); // 40 cenimeters
+        search_angular_speed_ = this->declare_parameter("search_angular_speed", 0.0); // Change, so the motor starts turning around in search of Docking Station
+        max_size_thresh_ = this->declare_parameter("max_size_thresh", 0.4); // stop at 40 cenimeters from the intersection point
         filter_value_ = this->declare_parameter("filter_value", 0.9);
 
         timer_ = this->create_wall_timer(100ms, std::bind(&Docking::timer_cb, this));
