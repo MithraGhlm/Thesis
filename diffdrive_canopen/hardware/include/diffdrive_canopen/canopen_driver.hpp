@@ -61,7 +61,7 @@ public:
     double cmd = 0.0;
     double pos = 0.0;
     double vel = 0.0;
-    float wheel_gear_ratio = 16.0f;
+    float wheel_gear_ratio = 16.0f * (100.0f/108.0f*100.0f/97.0f);  // Gear ratio * Correction ratio
 
     void set_name(const std::string &wheel_name)
     {
