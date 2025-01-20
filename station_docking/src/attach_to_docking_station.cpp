@@ -20,9 +20,9 @@ public:
 
         rcv_timeout_secs_ = this->declare_parameter("rcv_timeout_secs", 1.0);
         angular_chase_multiplier_ = this->declare_parameter("angular_chase_multiplier", 0.7);
-        forward_chase_speed_ = this->declare_parameter("forward_chase_speed", 0.2);
+        forward_chase_speed_ = this->declare_parameter("forward_chase_speed", 0.05);
         search_angular_speed_ = this->declare_parameter("search_angular_speed", 0.0); // Change, so the motor starts turning around in search of Docking Station
-        max_size_thresh_ = this->declare_parameter("max_size_thresh", 0.4); // stop at 40 cenimeters from the intersection point
+        max_size_thresh_ = this->declare_parameter("max_size_thresh", 0.6); // stop at 40 cenimeters from the intersection point
         filter_value_ = this->declare_parameter("filter_value", 0.9);
 
         timer_ = this->create_wall_timer(100ms, std::bind(&Docking::timer_cb, this));
@@ -40,8 +40,10 @@ private:
         if ((current_time - lastrcvtime_) < rcv_timeout_secs_) {
             RCLCPP_INFO(this->get_logger(), "Target: %f", target_dist_);
              if (target_dist_ > max_size_thresh_) {
-                 msg.linear.x = target_dist_;
-             }
+                 msg.linear.x = target_dist_/10.0;
+             } else{
+                 msg.linear.x = 0.0;
+             } 
             
             msg.angular.z = target_ang_; // -angular_chase_multiplier_ * target_dist_;
         } else {

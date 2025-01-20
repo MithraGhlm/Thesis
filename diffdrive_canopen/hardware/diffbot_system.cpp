@@ -165,8 +165,7 @@ std::vector<hardware_interface::CommandInterface> DiffDriveCanOpenHardware::expo
 hardware_interface::return_type DiffDriveCanOpenHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
-  float wheel_radius = 15.0f;
-
+  
   // convert tenths of degree to rad 
 
   comms_.wheel_l_->pos = comms_.wheel_l_->get_PositionActualValue()*(M_PI/1800.0f)*(-1.0f)/comms_.wheel_l_->wheel_gear_ratio;
