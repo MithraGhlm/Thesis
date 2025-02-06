@@ -16,7 +16,7 @@ public:
         subscription_ = this->create_subscription<geometry_msgs::msg::Point>(
             "/Intersection_Point", 10, std::bind(&Docking::listener_cb, this, std::placeholders::_1));
 
-        publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+        publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel_smoothed", 10);
 
         rcv_timeout_secs_ = this->declare_parameter("rcv_timeout_secs", 1.0);
         angular_chase_multiplier_ = this->declare_parameter("angular_chase_multiplier", 0.7);
