@@ -18,7 +18,7 @@ diff_cont:
 
     left_wheel_names: ['left_wheel_joint']
     right_wheel_names: ['right_wheel_joint']
-    wheel_separation: 0.545
+    wheel_separation: 0.6  # Actualy dist, before calibration: 0.545
     wheel_radius: 0.074
 
     use_stamped_vel: false
