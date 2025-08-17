@@ -1,4 +1,11 @@
 # Autonomous Mobile Robot (Caspi)
+## Demo
+You can find some videos of tests in the Demo folder.
+
+<video src="[https://github.com/<USER>/<REPO>/assets/12345678/abcdef12-3456-7890-abcd-ef1234567890](https://github.com/user-attachments/assets/b185de21-92a6-49ba-8590-1895bb96ea0f)" 
+       controls width="600">
+</video>
+
 
 ## Directory structure
 
